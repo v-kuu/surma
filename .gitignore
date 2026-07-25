@@ -1,0 +1,11 @@
+build/
+.conan/
+
+CMakeUserPresets.json
+
+.cache/
+compile_commands.json
+
+*.ptx
+*.cubin
+*.fatbin
