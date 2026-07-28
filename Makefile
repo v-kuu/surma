@@ -1,7 +1,11 @@
 BUILD_DIR := build/Debug
 PRESET := conan-debug
+COVERAGE_DIR := build/coverage_html
+COVERAGE_INFO := build/coverage.info
 
-.PHONY: install configure build test run clean rebuild bootstrap
+.PHONY: bootstrap install configure build test run clean rebuild coverage coverage-clean
+
+bootstrap: install configure build
 
 install:
 	conan install . --build=missing -s build_type=Debug
@@ -23,4 +27,21 @@ clean:
 
 rebuild: clean build
 
-bootstrap: install configure build
+coverage: SURMA_COVERAGE=ON
+coverage: coverage-clean
+	cmake --preset $(PRESET) -DSURMA_COVERAGE=ON
+	cmake --build --preset $(PRESET)
+	ctest --test-dir $(BUILD_DIR) --output-on-failure
+	lcov --capture \
+		--directory $(BUILD_DIR) \
+		--output-file $(COVERAGE_INFO) \
+		--exclude '/usr/*' \
+		--exclude '/*/catch2/*' \
+		--exclude '*/spdlog/*'
+	lcov --summary $(COVERAGE_INFO) --fail-under-lines 70
+	genhtml $(COVERAGE_INFO) \
+		--output-directory $(COVERAGE_DIR)
+	@echo "Report at $(COVERAGE_DIR)/index.html"
+
+coverage-clean:
+	find $(BUILD_DIR) -name '*.gcda' -delete
