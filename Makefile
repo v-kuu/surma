@@ -1,4 +1,4 @@
-BUILD_DIR := build/debug
+BUILD_DIR := build/Debug
 PRESET := conan-debug
 
 .PHONY: install configure build test run clean rebuild bootstrap
