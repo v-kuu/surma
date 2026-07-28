@@ -1,0 +1,4 @@
+#!/bin/sh
+git diff --cached --name-only --diff-filter=ACM \
+	| grep -E '\.(cpp|h|hpp|tpp|cu|cuh)$' \
+	| xargs -I{} clang-format --dry-run --Werror {}
