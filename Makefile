@@ -37,7 +37,8 @@ coverage: coverage-clean
 		--output-file $(COVERAGE_INFO) \
 		--exclude '/usr/*' \
 		--exclude '/*/catch2/*' \
-		--exclude '*/spdlog/*'
+		--exclude '*/spdlog/*' \
+		--ignore-errors unused
 	lcov --summary $(COVERAGE_INFO) --fail-under-lines 70
 	genhtml $(COVERAGE_INFO) \
 		--output-directory $(COVERAGE_DIR)
