@@ -1,0 +1,39 @@
+name: CI
+
+on:
+  push:
+    branches: [main]
+  pull_request:
+    branches: [main]
+
+jobs:
+  build-and-test:
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Install dependencies
+        run: |
+          sudo apt-get update -qq
+          sudo apt-get install -y cmake ninja-build clang python3-pip
+
+      - name: Install Conan
+        run: pip3 install conan
+
+      - name: Cache Conan packages
+        uses: actions/cache@v4
+        with:
+          path: ~/.conan2/p
+          key: conan-${{ hashFiles('conanfile.py') }}
+          restore-keys: conan-
+
+      - name: Detect Conan profile
+        run: conan profile detect --force
+
+      - name: Bootstrap
+        run: make bootstrap
+
+      - name: Test
+        run: make test
