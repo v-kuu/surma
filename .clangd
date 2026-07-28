@@ -1,0 +1,36 @@
+CompileFlags:
+  CompilationDatabase: build/Debug
+  Add:
+    - -Wall
+    - -Wextra
+    - -Wno-unused-parameter
+
+Diagnostics:
+  ClangTidy:
+    Add:
+      - modernize-*
+
+      - performance-unnecessary-copy-initialization
+      - performance-move-const-arg
+      - performance-noexcept-move-constructor
+      - performance-avoid-endl
+
+      - readability-const-return-type
+      - readability-container-size-empty
+      - readability-make-member-function-const
+      - readability-function-*
+
+      - bugprone-*
+
+      - cppcoreguidelines-pro-type-cstyle-cast
+      - cppcoreguidelines-no-malloc
+
+  UnusedIncludes: Strict
+
+InlayHints:
+  Enabled: true
+  ParameterNames: true
+  DeducedTypes: true
+
+Hover:
+  ShowAKA: true
