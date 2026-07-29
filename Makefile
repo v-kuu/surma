@@ -3,7 +3,7 @@ PRESET := conan-debug
 COVERAGE_DIR := build/coverage_html
 COVERAGE_INFO := build/coverage.info
 
-.PHONY: bootstrap install configure build test run clean rebuild coverage coverage-clean
+.PHONY: bootstrap install configure build test run clean rebuild coverage coverage-clean vuln-scan
 
 bootstrap: install configure build
 
@@ -46,3 +46,8 @@ coverage: coverage-clean
 
 coverage-clean:
 	find $(BUILD_DIR) -name '*.gcda' -delete
+
+vuln-scan:
+	conan lock create .
+	osv-scanner scan source .
+	trivy fs --scanners vuln --exit-code 1 .

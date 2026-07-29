@@ -1,0 +1,11 @@
+{
+    "version": "0.5",
+    "requires": [
+        "spdlog/1.14.0#4142f75f8a11e6a231c81d25472d4025%1767604742.699",
+        "fmt/10.2.1#25441914a1da0c98628fb50c865639f8%1778145878.923",
+        "catch2/3.6.0#c25921b857112b605fa54b0906d6b474%1736250258.827"
+    ],
+    "build_requires": [],
+    "python_requires": [],
+    "config_requires": []
+}
