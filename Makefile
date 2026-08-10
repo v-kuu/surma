@@ -2,8 +2,9 @@ BUILD_DIR := build/Debug
 PRESET := conan-debug
 COVERAGE_DIR := build/coverage_html
 COVERAGE_INFO := build/coverage.info
+SANITIZER ?= address,undefined
 
-.PHONY: bootstrap install configure build test run clean rebuild coverage coverage-clean vuln-scan
+.PHONY: bootstrap install configure build test run clean rebuild coverage coverage-clean vuln-scan san san-address san-thread san-memory
 
 bootstrap: install configure build
 
@@ -51,3 +52,17 @@ vuln-scan:
 	conan lock create .
 	osv-scanner scan source .
 	trivy fs --scanners vuln --exit-code 1 .
+
+san:
+	cmake --preset $(PRESET) -DSURMA_SANITIZER=$(SANITIZER)
+	cmake --build --preset $(PRESET)
+	ctest --test-dir $(BUILD_DIR) --output-on-failure
+
+san-address:
+	$(MAKE) san SANITIZER=address,undefined
+
+san-thread:
+	$(MAKE) san SANITIZER=thread
+
+san-memory:
+	$(MAKE) san SANITIZER=memory

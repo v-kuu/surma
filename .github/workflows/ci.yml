@@ -38,3 +38,46 @@ jobs:
       - name: Tests
         run: make coverage
 
+  sanitizers:
+    runs-on: ubuntu-latest
+    needs: build-and-test
+    strategy:
+      fail-fast: false
+      matrix:
+        sanitizer:
+          - name: AddressSanitizer + UBSan
+            flags: address,undefined
+          - name: ThreadSanitizer
+            flags: thread
+
+    name: ${{ matrix.sanitizer.name }}
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Install dependencies
+        run: |
+          sudo apt-get update -qq
+          sudo apt-get install -y cmake ninja-build clang python3-pip
+
+      - name: Install Conan
+        run: pip3 install conan
+
+      - name: Cache Conan packages
+        uses: actions/cache@v4
+        with:
+          path: ~/.conan2/p
+          key: conan-${{ hashFiles('conanfile.py') }}
+          restore-keys: conan-
+
+      - name: Detect Conan profile
+        run: conan profile detect --force
+
+      - name: Bootstrap
+        run: make bootstrap
+
+      - name: Run with ${{ matrix.sanitizer.name }}
+        run: make san SANITIZER=${{ matrix.sanitizer.flags }}
+        env:
+          ASAN_OPTIONS: halt_on_error=1:abort_on_error=1
+          UBSAN_OPTIONS: halt_on_error=1:abort_on_error=1:print_stacktrace=1
+          TSAN_OPTIONS: halt_on_error=1

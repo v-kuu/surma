@@ -18,12 +18,35 @@ endif()
 
 find_package(spdlog REQUIRED)
 
-add_executable(surma src/main.cpp)
-target_link_libraries(surma PRIVATE spdlog::spdlog)
-target_compile_options(surma PRIVATE
-	$<$<COMPILE_LANGUAGE:CXX>:-Wall -Wextra -Werror>
-	$<$<COMPILE_LANGUAGE:CUDA>:-Xcompiler=-Wall,-Wextra-Werror>
+add_library(surma_lib STATIC
+	src/surma.cpp
 )
+target_include_directories(surma_lib PUBLIC src/)
+
+target_link_libraries(surma_lib PRIVATE spdlog::spdlog)
+target_compile_options(surma_lib PRIVATE
+	$<$<COMPILE_LANGUAGE:CXX>:-Wall -Wextra -Werror>
+	$<$<COMPILE_LANGUAGE:CUDA>:-Xcompiler=-Wall,-Wextra,-Werror>
+)
+
+add_executable(surma src/main.cpp)
+target_link_libraries(surma PRIVATE surma_lib)
+
+set(SURMA_SANITIZER "" CACHE STRING
+	"Sanitizer to enable: address,undefined | thread | memory")
+
+if (SURMA_SANITIZER)
+	message(STATUS "Sanitizer enabled: ${SURMA_SANITIZER}")
+	target_compile_options(surma_lib PRIVATE
+		-fsanitize=${SURMA_SANITIZER}
+		-fno-omit-frame-pointer
+		-g
+	)
+	target_link_options(surma PRIVATE
+		-fsanitize=${SURMA_SANITIZER}
+	)
+endif()
+
 
 enable_testing()
 add_subdirectory(tests)

@@ -1,6 +1,7 @@
-#include <spdlog/spdlog.h>
+#include "surma.hpp"
 
-int main() {
-	spdlog::info("surma starting up");
-	return 0;
+int main()
+{
+    surma::run();
+    return 0;
 }
