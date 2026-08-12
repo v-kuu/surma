@@ -6,7 +6,7 @@ using namespace surma::test;
 
 void *const sentinel_pointer = reinterpret_cast<void *>(0xDEAD0000);
 
-TEST_CASE("umem init succeeds with hugepages", "[umem]")
+TEST_CASE("umem init succeeds with hugepages", "[unit][umem]")
 {
     FakePlatform platform;
     platform.mmap_return = sentinel_pointer;
@@ -16,7 +16,7 @@ TEST_CASE("umem init succeeds with hugepages", "[umem]")
     REQUIRE(platform.mmap_call_count == 1);
 }
 
-TEST_CASE("umem init falls back when hugepages unavailable", "[umem]")
+TEST_CASE("umem init falls back when hugepages unavailable", "[unit][umem]")
 {
     FakePlatform platform;
     platform.mmap_hugepage_fails = true;
@@ -27,7 +27,7 @@ TEST_CASE("umem init falls back when hugepages unavailable", "[umem]")
     REQUIRE(platform.mmap_call_count == 2);
 }
 
-TEST_CASE("umem init fails when both mmap calls fail", "[umem]")
+TEST_CASE("umem init fails when both mmap calls fail", "[unit][umem]")
 {
     FakePlatform platform;
     platform.mmap_hugepage_fails = true;
@@ -37,7 +37,7 @@ TEST_CASE("umem init fails when both mmap calls fail", "[umem]")
     REQUIRE(umem.init() != 0);
 }
 
-TEST_CASE("umem init fails when xsk_umem_create fails", "[umem]")
+TEST_CASE("umem init fails when xsk_umem_create fails", "[unit][umem]")
 {
     FakePlatform platform;
     platform.mmap_return = sentinel_pointer;
@@ -47,7 +47,7 @@ TEST_CASE("umem init fails when xsk_umem_create fails", "[umem]")
     REQUIRE(umem.init() != 0);
 }
 
-TEST_CASE("umem destroy calls delete and unmap", "[umem]")
+TEST_CASE("umem destroy calls delete and unmap", "[unit][umem]")
 {
     FakePlatform platform;
     platform.mmap_return = sentinel_pointer;
@@ -62,7 +62,7 @@ TEST_CASE("umem destroy calls delete and unmap", "[umem]")
     REQUIRE(umem.area == nullptr);
 }
 
-TEST_CASE("umem destroy is safe before init", "[umem]")
+TEST_CASE("umem destroy is safe before init", "[unit][umem]")
 {
     FakePlatform platform;
     surma::capture::Umem umem(platform);
@@ -70,4 +70,15 @@ TEST_CASE("umem destroy is safe before init", "[umem]")
     REQUIRE_NOTHROW(umem.destroy());
     REQUIRE_FALSE(platform.munmap_called);
     REQUIRE_FALSE(platform.umem_delete_called);
+}
+
+TEST_CASE("real Linux platform can create and destroy UMEM",
+          "[integration][umem]")
+{
+    surma::capture::LinuxPlatform platform;
+    surma::capture::Umem umem(platform);
+
+    REQUIRE(umem.init() == 0);
+
+    REQUIRE_NOTHROW(umem.destroy());
 }

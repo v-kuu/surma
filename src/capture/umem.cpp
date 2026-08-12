@@ -1,4 +1,5 @@
 #include "umem.hpp"
+#include <cerrno>
 #include <spdlog/spdlog.h>
 
 namespace surma::capture
@@ -28,7 +29,15 @@ int Umem::init()
         }
     }
 
-    return platform.xsk_umem__create(&umem, area, UMEM_SIZE, &fq, &cq, &cfg);
+    int ret = platform.xsk_umem__create(&umem, area, UMEM_SIZE, &fq, &cq, &cfg);
+
+    if (ret != 0)
+    {
+        spdlog::error("xsk_umem__create failed: ret={}, errno={}, {}", ret,
+                      errno, std::strerror(errno));
+    }
+
+    return ret;
 }
 
 void Umem::destroy()

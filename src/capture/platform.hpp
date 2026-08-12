@@ -45,12 +45,12 @@ struct LinuxPlatform : Platform
                          struct xsk_ring_prod *fq, struct xsk_ring_cons *cq,
                          const struct xsk_umem_config *config) override
     {
-        return xsk_umem__create(umem, umem_area, size, fq, cq, config);
+        return ::xsk_umem__create(umem, umem_area, size, fq, cq, config);
     }
 
     int xsk_umem__delete(struct xsk_umem *umem) override
     {
-        return xsk_umem__delete(umem);
+        return ::xsk_umem__delete(umem);
     }
 };
 

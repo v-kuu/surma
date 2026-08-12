@@ -29,4 +29,7 @@ endif()
 
 include(CTest)
 include(Catch)
-catch_discover_tests(surma_tests)
+catch_discover_tests(
+	surma_tests
+	TEST_SPEC "~[integration]"
+)

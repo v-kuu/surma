@@ -4,7 +4,7 @@ COVERAGE_DIR := build/coverage_html
 COVERAGE_INFO := build/coverage.info
 SANITIZER ?= address,undefined
 
-.PHONY: bootstrap install configure build test run clean rebuild coverage coverage-clean vuln-scan san san-address san-thread san-memory
+.PHONY: bootstrap install configure build test integration run clean rebuild coverage coverage-clean vuln-scan san san-address san-thread san-memory
 
 bootstrap: install configure build
 
@@ -19,6 +19,9 @@ build:
 
 test:
 	ctest --test-dir $(BUILD_DIR) --output-on-failure
+
+integration:
+	sudo ./$(BUILD_DIR)/tests/surma_tests "[integration]"
 
 run:
 	./$(BUILD_DIR)/surma
