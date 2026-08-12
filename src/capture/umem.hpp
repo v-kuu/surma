@@ -1,6 +1,7 @@
 #pragma once
 
-#include <spdlog/spdlog.h>
+#include "platform.hpp"
+
 #include <sys/mman.h>
 #include <xdp/xsk.h>
 
@@ -11,13 +12,23 @@
 #define FILL_RING_SIZE XSK_RING_PROD__DEFAULT_NUM_DESCS
 #define BATCH_SIZE 64
 
-struct umem
+namespace surma::capture
 {
+
+struct Umem
+{
+    explicit Umem(Platform &platform) : platform(platform)
+    {
+    }
+
     int init();
     void destroy();
 
+    Platform &platform;
     void *area;
     struct xsk_umem *umem;
     struct xsk_ring_prod fq;
     struct xsk_ring_cons cq;
 };
+
+} // namespace surma::capture

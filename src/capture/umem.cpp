@@ -1,6 +1,10 @@
 #include "umem.hpp"
+#include <spdlog/spdlog.h>
 
-int umem::init()
+namespace surma::capture
+{
+
+int Umem::init()
 {
     struct xsk_umem_config cfg = {
         .fill_size = FILL_RING_SIZE,
@@ -10,13 +14,13 @@ int umem::init()
         .flags = 0,
     };
 
-    area = mmap(nullptr, UMEM_SIZE, PROT_READ | PROT_WRITE,
-                MAP_PRIVATE | MAP_ANONYMOUS | MAP_HUGETLB, -1, 0);
+    area = platform.mmap(nullptr, UMEM_SIZE, PROT_READ | PROT_WRITE,
+                         MAP_PRIVATE | MAP_ANONYMOUS | MAP_HUGETLB, -1, 0);
     if (area == MAP_FAILED)
     {
         spdlog::warn("MAP_HUGETLB not available for UMEM");
-        area = mmap(nullptr, UMEM_SIZE, PROT_READ | PROT_WRITE,
-                    MAP_PRIVATE | MAP_ANONYMOUS, -1, 0);
+        area = platform.mmap(nullptr, UMEM_SIZE, PROT_READ | PROT_WRITE,
+                             MAP_PRIVATE | MAP_ANONYMOUS, -1, 0);
         if (area == MAP_FAILED)
         {
             spdlog::error("failed to map UMEM area");
@@ -24,13 +28,21 @@ int umem::init()
         }
     }
 
-    return xsk_umem__create(&umem, area, UMEM_SIZE, &fq, &cq, &cfg);
+    return platform.xsk_umem__create(&umem, area, UMEM_SIZE, &fq, &cq, &cfg);
 }
 
-void umem::destroy()
+void Umem::destroy()
 {
-    xsk_umem__delete(umem);
-    munmap(area, UMEM_SIZE);
-    umem = nullptr;
-    area = nullptr;
+    if (umem != nullptr)
+    {
+        platform.xsk_umem__delete(umem);
+        umem = nullptr;
+    }
+    if (area != nullptr)
+    {
+        platform.munmap(area, UMEM_SIZE);
+        area = nullptr;
+    }
 }
+
+} // namespace surma::capture
