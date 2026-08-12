@@ -1,6 +1,7 @@
 #pragma once
 
 #include <spdlog/spdlog.h>
+#include <sys/mman.h>
 #include <xdp/xsk.h>
 
 #define UMEM_SIZE (1 << 23)
@@ -19,4 +20,4 @@ struct umem
     struct xsk_umem *umem;
     struct xsk_ring_prod fq;
     struct xsk_ring_cons cq;
-}
+};

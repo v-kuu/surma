@@ -17,13 +17,21 @@ else()
 endif()
 
 find_package(spdlog REQUIRED)
+find_package(PkgConfig REQUIRED)
+pkg_check_modules(XDP REQUIRED libxdp)
+pkg_check_modules(BPF REQUIRED libbpf)
 
 add_library(surma_lib STATIC
 	src/surma.cpp
 )
+target_include_directories(surma_lib PRIVATE ${XDP_INCLUDE_DIRS})
 target_include_directories(surma_lib PUBLIC src/)
 
-target_link_libraries(surma_lib PRIVATE spdlog::spdlog)
+target_link_libraries(surma_lib PRIVATE
+	spdlog::spdlog
+	${XDP_LIBRARIES}
+	${BPF_LIBRARIES}
+)
 target_compile_options(surma_lib PRIVATE
 	$<$<COMPILE_LANGUAGE:CXX>:-Wall -Wextra -Werror>
 	$<$<COMPILE_LANGUAGE:CUDA>:-Xcompiler=-Wall,-Wextra,-Werror>

@@ -4,6 +4,10 @@ CompileFlags:
     - -Wall
     - -Wextra
     - -Wno-unused-parameter
+  Remove:
+    - -fmodules-ts
+    - -fmodule-mapper=*
+    - -fdeps-format=*
 
 Diagnostics:
   ClangTidy:
