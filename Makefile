@@ -4,7 +4,7 @@ COVERAGE_DIR := build/coverage_html
 COVERAGE_INFO := build/coverage.info
 SANITIZER ?= address,undefined
 
-.PHONY: bootstrap install configure build test integration run clean rebuild coverage coverage-clean vuln-scan san san-address san-thread san-memory
+.PHONY: bootstrap install configure build test integration run clean rebuild coverage coverage-clean vuln-scan san san-address san-thread san-memory hugepages
 
 bootstrap: install configure build
 
@@ -69,3 +69,7 @@ san-thread:
 
 san-memory:
 	$(MAKE) san SANITIZER=memory
+
+# register hugetables so surma can utilize them
+hugepages:
+	sudo sysctl -w vm/nr_hugepages=4
