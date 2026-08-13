@@ -3,8 +3,10 @@ PRESET := conan-debug
 COVERAGE_DIR := build/coverage_html
 COVERAGE_INFO := build/coverage.info
 SANITIZER ?= address,undefined
+NETWORK_FIXTURE := ./tests/capture/network_fixture.sh
+TEST_BINARY := ./$(BUILD_DIR)/tests/surma_tests
 
-.PHONY: bootstrap install configure build test integration run clean rebuild coverage coverage-clean vuln-scan san san-address san-thread san-memory hugepages
+.PHONY: bootstrap install configure build test integration integration-setup integration-test integration-clean run clean rebuild coverage coverage-clean vuln-scan san san-address san-thread san-memory hugepages
 
 bootstrap: install configure build
 
@@ -21,7 +23,18 @@ test:
 	ctest --test-dir $(BUILD_DIR) --output-on-failure
 
 integration:
-	sudo ./$(BUILD_DIR)/tests/surma_tests "[integration]"
+	$(MAKE) integration-setup
+	trap '$(MAKE) integration-clean' EXIT; \
+	$(MAKE) integration-test
+
+integration-setup:
+	sudo bash $(NETWORK_FIXTURE) setup
+
+integration-test:
+	sudo ip netns exec surma-test $(TEST_BINARY) "[integration]"
+
+integration-clean:
+	sudo bash $(NETWORK_FIXTURE) teardown
 
 run:
 	./$(BUILD_DIR)/surma

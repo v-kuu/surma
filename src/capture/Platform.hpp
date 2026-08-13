@@ -25,6 +25,16 @@ struct Platform
                                  const struct xsk_umem_config *config) = 0;
 
     virtual int xsk_umem__delete(struct xsk_umem *umem) = 0;
+
+    virtual void xsk_socket__delete(struct xsk_socket *xsk) = 0;
+
+    virtual int xsk_socket__create(struct xsk_socket **xsk, const char *iface,
+                                   uint32_t queue_id, struct xsk_umem *umem,
+                                   struct xsk_ring_cons *rx,
+                                   struct xsk_ring_prod *tx,
+                                   const struct xsk_socket_config *cfg) = 0;
+
+    virtual int xsk_socket__fd(struct xsk_socket *xsk) = 0;
 };
 
 // Production implementation simply calls the real functions
@@ -51,6 +61,24 @@ struct LinuxPlatform : Platform
     int xsk_umem__delete(struct xsk_umem *umem) override
     {
         return ::xsk_umem__delete(umem);
+    }
+
+    void xsk_socket__delete(struct xsk_socket *xsk) override
+    {
+        return ::xsk_socket__delete(xsk);
+    }
+
+    int xsk_socket__create(struct xsk_socket **xsk, const char *iface,
+                           uint32_t queue_id, struct xsk_umem *umem,
+                           struct xsk_ring_cons *rx, struct xsk_ring_prod *tx,
+                           const struct xsk_socket_config *cfg) override
+    {
+        return ::xsk_socket__create(xsk, iface, queue_id, umem, rx, tx, cfg);
+    }
+
+    int xsk_socket__fd(struct xsk_socket *xsk) override
+    {
+        return ::xsk_socket__fd(xsk);
     }
 };
 

@@ -23,8 +23,8 @@ class Socket
     Socket(const Socket &other) = delete;
     Socket &operator=(const Socket &other) = delete;
     Socket(Socket &&other) noexcept
-        : platform(other.platform), xsk(std::exchange(other.xsk, nullptr)),
-          rx(other.rx), umem(other.umem), fd(other.fd)
+        : platform_(other.platform_), xsk_(std::exchange(other.xsk_, nullptr)),
+          rx_(other.rx_), umem_(other.umem_), fd_(other.fd_)
     {
     }
     Socket &operator=(Socket &&) = delete;
@@ -32,18 +32,22 @@ class Socket
     static std::expected<Socket, SocketError> init(Platform &platform, Umem &u,
                                                    const char *iface,
                                                    uint32_t queue_id);
+    [[nodiscard]] int fd() const
+    {
+        return fd_;
+    };
 
   private:
     explicit Socket(Platform &platform, Umem &umem)
-        : platform(platform), xsk(nullptr), rx({}), umem(umem), fd(-1)
+        : platform_(platform), xsk_(nullptr), rx_({}), umem_(umem), fd_(-1)
     {
     }
 
-    Platform &platform;
-    struct xsk_socket *xsk;
-    struct xsk_ring_cons rx;
-    struct Umem &umem;
-    int fd;
+    Platform &platform_;
+    struct xsk_socket *xsk_;
+    struct xsk_ring_cons rx_;
+    Umem &umem_;
+    int fd_;
 };
 
 } // namespace surma::capture
