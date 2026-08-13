@@ -23,7 +23,8 @@ pkg_check_modules(BPF REQUIRED libbpf)
 
 add_library(surma_lib STATIC
 	src/surma.cpp
-	src/capture/umem.cpp
+	src/capture/Umem.cpp
+	src/capture/Socket.cpp
 )
 target_include_directories(surma_lib PRIVATE ${XDP_INCLUDE_DIRS})
 target_include_directories(surma_lib PUBLIC src/)

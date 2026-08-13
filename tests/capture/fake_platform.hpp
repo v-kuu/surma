@@ -1,5 +1,5 @@
 #pragma once
-#include "capture/platform.hpp"
+#include "capture/Platform.hpp"
 #include <cstring>
 
 namespace surma::test

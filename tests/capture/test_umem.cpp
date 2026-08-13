@@ -1,4 +1,4 @@
-#include "capture/umem.hpp"
+#include "capture/Umem.hpp"
 #include "fake_platform.hpp"
 #include <catch2/catch_test_macros.hpp>
 
@@ -34,7 +34,7 @@ TEST_CASE("umem init fails when both mmap calls fail", "[unit][umem]")
     platform.mmap_return = MAP_FAILED;
 
     auto umem = surma::capture::Umem::init(platform);
-    REQUIRE(umem.error() == surma::capture::MapErr);
+    REQUIRE(umem.error() == surma::capture::UmemError::MapErr);
 }
 
 TEST_CASE("umem init fails when xsk_umem_create fails", "[unit][umem]")
@@ -44,7 +44,7 @@ TEST_CASE("umem init fails when xsk_umem_create fails", "[unit][umem]")
     platform.umem_create_return = -1;
 
     auto umem = surma::capture::Umem::init(platform);
-    REQUIRE(umem.error() == surma::capture::XskErr);
+    REQUIRE(umem.error() == surma::capture::UmemError::XskErr);
 }
 
 TEST_CASE("umem destructor calls delete and unmap", "[unit][umem]")

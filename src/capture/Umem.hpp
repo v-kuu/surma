@@ -1,6 +1,6 @@
 #pragma once
 
-#include "platform.hpp"
+#include "Platform.hpp"
 
 #include <expected>
 #include <sys/mman.h>
@@ -17,38 +17,44 @@
 namespace surma::capture
 {
 
-enum UmemError
+enum class UmemError
 {
     MapErr,
     XskErr,
 };
 
-struct Umem
+class Umem
 {
-  private:
-    explicit Umem(Platform &platform) : platform(platform)
-    {
-    }
-
   public:
     Umem() = delete;
     ~Umem();
     Umem(const Umem &other) = delete;
     Umem &operator=(const Umem &other) = delete;
     Umem(Umem &&other) noexcept
-        : platform(other.platform), area(std::exchange(other.area, nullptr)),
-          umem(std::exchange(other.umem, nullptr)), fq(other.fq), cq(other.cq)
+        : platform_(other.platform_),
+          area_(std::exchange(other.area_, nullptr)),
+          umem_(std::exchange(other.umem_, nullptr)), fq_(other.fq_),
+          cq_(other.cq_)
     {
     }
     Umem &operator=(Umem &&) = delete;
 
+    xsk_umem *handle()
+    {
+        return umem_;
+    };
     static std::expected<Umem, UmemError> init(Platform &platform);
 
-    Platform &platform;
-    void *area;
-    struct xsk_umem *umem;
-    struct xsk_ring_prod fq;
-    struct xsk_ring_cons cq;
+  private:
+    explicit Umem(Platform &platform) : platform_(platform)
+    {
+    }
+
+    Platform &platform_;
+    void *area_;
+    struct xsk_umem *umem_;
+    struct xsk_ring_prod fq_;
+    struct xsk_ring_cons cq_;
 };
 
 } // namespace surma::capture
