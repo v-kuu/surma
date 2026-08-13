@@ -2,7 +2,9 @@
 
 #include "platform.hpp"
 
+#include <expected>
 #include <sys/mman.h>
+#include <utility>
 #include <xdp/xsk.h>
 
 #define UMEM_SIZE (1 << 23)
@@ -15,14 +17,32 @@
 namespace surma::capture
 {
 
+enum UmemError
+{
+    MapErr,
+    XskErr,
+};
+
 struct Umem
 {
+  private:
     explicit Umem(Platform &platform) : platform(platform)
     {
     }
 
-    int init();
-    void destroy();
+  public:
+    Umem() = delete;
+    ~Umem();
+    Umem(const Umem &other) = delete;
+    Umem &operator=(const Umem &other) = delete;
+    Umem(Umem &&other) noexcept
+        : platform(other.platform), area(std::exchange(other.area, nullptr)),
+          umem(std::exchange(other.umem, nullptr)), fq(other.fq), cq(other.cq)
+    {
+    }
+    Umem &operator=(Umem &&) = delete;
+
+    static std::expected<Umem, UmemError> init(Platform &platform);
 
     Platform &platform;
     void *area;

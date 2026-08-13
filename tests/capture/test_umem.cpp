@@ -11,8 +11,8 @@ TEST_CASE("umem init succeeds with hugepages", "[unit][umem]")
     FakePlatform platform;
     platform.mmap_return = sentinel_pointer;
 
-    surma::capture::Umem umem(platform);
-    REQUIRE(umem.init() == 0);
+    auto umem = surma::capture::Umem::init(platform);
+    REQUIRE(umem.has_value());
     REQUIRE(platform.mmap_call_count == 1);
 }
 
@@ -22,8 +22,8 @@ TEST_CASE("umem init falls back when hugepages unavailable", "[unit][umem]")
     platform.mmap_hugepage_fails = true;
     platform.mmap_return = sentinel_pointer;
 
-    surma::capture::Umem umem(platform);
-    REQUIRE(umem.init() == 0);
+    auto umem = surma::capture::Umem::init(platform);
+    REQUIRE(umem.has_value());
     REQUIRE(platform.mmap_call_count == 2);
 }
 
@@ -33,8 +33,8 @@ TEST_CASE("umem init fails when both mmap calls fail", "[unit][umem]")
     platform.mmap_hugepage_fails = true;
     platform.mmap_return = MAP_FAILED;
 
-    surma::capture::Umem umem(platform);
-    REQUIRE(umem.init() != 0);
+    auto umem = surma::capture::Umem::init(platform);
+    REQUIRE(umem.error() == surma::capture::MapErr);
 }
 
 TEST_CASE("umem init fails when xsk_umem_create fails", "[unit][umem]")
@@ -43,42 +43,33 @@ TEST_CASE("umem init fails when xsk_umem_create fails", "[unit][umem]")
     platform.mmap_return = sentinel_pointer;
     platform.umem_create_return = -1;
 
-    surma::capture::Umem umem(platform);
-    REQUIRE(umem.init() != 0);
+    auto umem = surma::capture::Umem::init(platform);
+    REQUIRE(umem.error() == surma::capture::XskErr);
 }
 
-TEST_CASE("umem destroy calls delete and unmap", "[unit][umem]")
+TEST_CASE("umem destructor calls delete and unmap", "[unit][umem]")
 {
     FakePlatform platform;
     platform.mmap_return = sentinel_pointer;
 
-    surma::capture::Umem umem(platform);
-    REQUIRE(umem.init() == 0);
+    {
+        auto umem = surma::capture::Umem::init(platform);
+        REQUIRE(umem.has_value());
+    }
 
-    umem.destroy();
     REQUIRE(platform.umem_delete_called);
-    REQUIRE(umem.umem == nullptr);
     REQUIRE(platform.munmap_called);
-    REQUIRE(umem.area == nullptr);
-}
-
-TEST_CASE("umem destroy is safe before init", "[unit][umem]")
-{
-    FakePlatform platform;
-    surma::capture::Umem umem(platform);
-
-    REQUIRE_NOTHROW(umem.destroy());
-    REQUIRE_FALSE(platform.munmap_called);
-    REQUIRE_FALSE(platform.umem_delete_called);
 }
 
 TEST_CASE("real Linux platform can create and destroy UMEM",
           "[integration][umem]")
 {
     surma::capture::LinuxPlatform platform;
-    surma::capture::Umem umem(platform);
 
-    REQUIRE(umem.init() == 0);
-
-    REQUIRE_NOTHROW(umem.destroy());
+    REQUIRE_NOTHROW(
+        [&]
+        {
+            auto umem = surma::capture::Umem::init(platform);
+            REQUIRE(umem.has_value());
+        }());
 }
