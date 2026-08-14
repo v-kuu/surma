@@ -1,6 +1,5 @@
 #include "Socket.hpp"
 
-#include <cerrno>
 #include <spdlog/spdlog.h>
 
 namespace surma::capture
@@ -12,6 +11,11 @@ Socket::~Socket()
         platform_.xsk_socket__delete(xsk_);
 }
 
+/*
+ *	We inhibit XDP prog loading here so we can safely retry in SKB
+ *	mode if DRV mode is unavailable, deferring the XDP program loading
+ *	for later
+ */
 std::expected<Socket, SocketError> Socket::init(Platform &platform, Umem &u,
                                                 const char *iface,
                                                 uint32_t queue_id)
@@ -21,7 +25,7 @@ std::expected<Socket, SocketError> Socket::init(Platform &platform, Umem &u,
     struct xsk_socket_config cfg = {
         .rx_size = RX_RING_SIZE,
         .tx_size = 0,
-        .libbpf_flags = 0,
+        .libbpf_flags = XSK_LIBBPF_FLAGS__INHIBIT_PROG_LOAD,
         .xdp_flags = XDP_FLAGS_DRV_MODE,
         .bind_flags = XDP_USE_NEED_WAKEUP,
     };
@@ -31,9 +35,23 @@ std::expected<Socket, SocketError> Socket::init(Platform &platform, Umem &u,
                                           &cfg);
     if (res != 0)
     {
-        spdlog::error("xsk_socket__create failed: ret={}, errno={}, {}", res,
-                      errno, std::strerror(errno));
-        return std::unexpected(SocketError::SockErr);
+        spdlog::warn("XDP driver mode unavailable, falling back to SKB");
+        ret.native_xdp_ = false;
+        cfg.xdp_flags = XDP_FLAGS_SKB_MODE;
+        res = platform.xsk_socket__create(&ret.xsk_, iface, queue_id,
+                                          ret.umem_.handle(), &ret.rx_, nullptr,
+                                          &cfg);
+        if (res != 0)
+        {
+            spdlog::error("xsk_socket__create failed: {} ({})", -res,
+                          std::strerror(-res));
+            return std::unexpected(SocketError::SockErr);
+        }
+    }
+    else
+    {
+        spdlog::info("XDP driver mode enabled");
+        ret.native_xdp_ = true;
     }
     ret.fd_ = platform.xsk_socket__fd(ret.xsk_);
 

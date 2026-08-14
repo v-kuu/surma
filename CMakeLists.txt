@@ -23,6 +23,7 @@ pkg_check_modules(BPF REQUIRED libbpf)
 
 add_library(surma_lib STATIC
 	src/surma.cpp
+	src/Pipeline.cpp
 	src/capture/Umem.cpp
 	src/capture/Socket.cpp
 )
@@ -40,7 +41,10 @@ target_compile_options(surma_lib PRIVATE
 )
 
 add_executable(surma src/main.cpp)
-target_link_libraries(surma PRIVATE surma_lib)
+target_link_libraries(surma PRIVATE
+	surma_lib
+	spdlog::spdlog
+)
 
 set(SURMA_SANITIZER "" CACHE STRING
 	"Sanitizer to enable: address,undefined | thread | memory")

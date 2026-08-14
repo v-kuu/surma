@@ -24,7 +24,8 @@ class Socket
     Socket &operator=(const Socket &other) = delete;
     Socket(Socket &&other) noexcept
         : platform_(other.platform_), xsk_(std::exchange(other.xsk_, nullptr)),
-          rx_(other.rx_), umem_(other.umem_), fd_(other.fd_)
+          rx_(other.rx_), umem_(other.umem_), fd_(other.fd_),
+          native_xdp_(other.native_xdp_)
     {
     }
     Socket &operator=(Socket &&) = delete;
@@ -48,6 +49,7 @@ class Socket
     struct xsk_ring_cons rx_;
     Umem &umem_;
     int fd_;
+    bool native_xdp_;
 };
 
 } // namespace surma::capture

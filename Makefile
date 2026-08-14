@@ -37,7 +37,7 @@ integration-clean:
 	sudo bash $(NETWORK_FIXTURE) teardown
 
 run:
-	./$(BUILD_DIR)/surma
+	sudo ./$(BUILD_DIR)/surma
 
 clean:
 	ninja -C $(BUILD_DIR) clean
