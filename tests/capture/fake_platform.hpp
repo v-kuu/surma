@@ -1,6 +1,7 @@
 #pragma once
 #include "capture/Platform.hpp"
 #include <cstring>
+#include <linux/if_link.h>
 
 namespace surma::test
 {
@@ -23,6 +24,9 @@ struct FakePlatform : surma::capture::Platform
     struct xsk_socket *socket_delete_arg = nullptr;
     const char *last_iface = nullptr;
     uint32_t last_queue_id = 0;
+    bool socket_drv_mode_fails = false;
+    int socket_create_call_count = 0;
+    int xdp_flags = 0;
 
     // umem fakes
     void *mmap(void *, size_t, int, int flags, int, off_t) override
@@ -62,11 +66,13 @@ struct FakePlatform : surma::capture::Platform
     {
         last_iface = iface;
         last_queue_id = queue_id;
+        socket_create_call_count++;
+
+        if (socket_drv_mode_fails && (xdp_flags & XDP_FLAGS_DRV_MODE))
+            return -1;
 
         if (socket_create_return == 0)
-        {
             *xsk = reinterpret_cast<struct xsk_socket *>(0xDEAD2000);
-        }
 
         return socket_create_return;
     }
