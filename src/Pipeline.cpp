@@ -15,7 +15,7 @@ std::expected<Pipeline, PipelineError> Pipeline::init(Config &cfg)
     ret.umem_ = std::make_unique<capture::Umem>(std::move(umem.value()));
 
     auto socket =
-        capture::Socket::init(*cfg.platform, *ret.umem_, cfg.iface.data(),
+        capture::Socket::init(*cfg.platform, *ret.umem_, cfg.iface.c_str(),
                               cfg.queue_id)
             .transform_error([](capture::SocketError)
                              { return PipelineError::SocketInitFailed; });

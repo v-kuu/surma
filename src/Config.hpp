@@ -9,7 +9,7 @@ namespace surma
 struct Config
 {
     std::unique_ptr<capture::Platform> platform;
-    std::string_view iface;
+    std::string iface;
     uint32_t queue_id;
 };
 
