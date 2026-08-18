@@ -1,4 +1,6 @@
 #include "Pipeline.hpp"
+#include "capture/XdpProgram.hpp"
+#include <net/if.h>
 
 namespace surma
 {
@@ -23,6 +25,17 @@ std::expected<Pipeline, PipelineError> Pipeline::init(Config &cfg)
         return std::unexpected(socket.error());
     ret.socket_ = std::make_unique<capture::Socket>(std::move(socket.value()));
 
+    unsigned int ifindex = if_nametoindex(cfg.iface.c_str());
+    auto xdp =
+        capture::XdpProgram::load(*cfg.platform, static_cast<int>(ifindex))
+            .transform_error([](capture::XdpError)
+                             { return PipelineError::XdpProgramFailed; });
+
+    if (!xdp.has_value())
+        return std::unexpected(xdp.error());
+
+    if (auto result = xdp.value().attach(*cfg.platform, *ret.socket_); !result)
+        return std::unexpected(PipelineError::XdpProgramFailed);
     return ret;
 }
 

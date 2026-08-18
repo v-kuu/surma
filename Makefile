@@ -8,7 +8,10 @@ TEST_BINARY := ./$(BUILD_DIR)/tests/surma_tests
 
 .PHONY: bootstrap install configure build test integration integration-setup integration-test integration-clean run clean rebuild coverage coverage-clean vuln-scan san san-address san-thread san-memory hugepages
 
-bootstrap: install configure build
+bootstrap:
+	$(MAKE) install
+	$(MAKE) configure
+	$(MAKE) build
 
 install:
 	conan install . --build=missing -s build_type=Debug

@@ -96,19 +96,3 @@ TEST_CASE("socket init passes queue id correctly", "[unit][socket]")
     REQUIRE(socket.has_value());
     REQUIRE(platform.last_queue_id == 3);
 }
-
-TEST_CASE("real AF_XDP socket can be created and destroyed",
-          "[integration][socket]")
-{
-    surma::capture::LinuxPlatform platform;
-
-    auto umem = surma::capture::Umem::init(platform);
-    REQUIRE(umem.has_value());
-
-    {
-        auto socket = surma::capture::Socket::init(platform, umem.value(),
-                                                   "veth-test", 0);
-        REQUIRE(socket.has_value());
-        REQUIRE(socket->fd() >= 0);
-    }
-}

@@ -35,6 +35,10 @@ struct Platform
                                    const struct xsk_socket_config *cfg) = 0;
 
     virtual int xsk_socket__fd(struct xsk_socket *xsk) = 0;
+
+    virtual int xsk_setup_xdp_prog(int ifindex, int *xsks_map_fd) = 0;
+
+    virtual int xsk_socket__update_xskmap(xsk_socket *xsk, int xsks_map_fd) = 0;
 };
 
 // Production implementation simply calls the real functions
@@ -65,7 +69,7 @@ struct LinuxPlatform : Platform
 
     void xsk_socket__delete(struct xsk_socket *xsk) override
     {
-        return ::xsk_socket__delete(xsk);
+        ::xsk_socket__delete(xsk);
     }
 
     int xsk_socket__create(struct xsk_socket **xsk, const char *iface,
@@ -79,6 +83,16 @@ struct LinuxPlatform : Platform
     int xsk_socket__fd(struct xsk_socket *xsk) override
     {
         return ::xsk_socket__fd(xsk);
+    }
+
+    int xsk_setup_xdp_prog(int ifindex, int *xsks_map_fd) override
+    {
+        return ::xsk_setup_xdp_prog(ifindex, xsks_map_fd);
+    }
+
+    int xsk_socket__update_xskmap(xsk_socket *xsk, int xsks_map_fd) override
+    {
+        return ::xsk_socket__update_xskmap(xsk, xsks_map_fd);
     }
 };
 

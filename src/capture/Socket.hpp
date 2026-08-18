@@ -24,7 +24,7 @@ class Socket
     Socket &operator=(const Socket &other) = delete;
     Socket(Socket &&other) noexcept
         : platform_(other.platform_), xsk_(std::exchange(other.xsk_, nullptr)),
-          rx_(other.rx_), umem_(other.umem_), fd_(other.fd_),
+          rx_(std::exchange(other.rx_, {})), umem_(other.umem_), fd_(other.fd_),
           native_xdp_(other.native_xdp_)
     {
     }
@@ -37,19 +37,23 @@ class Socket
     {
         return fd_;
     };
+    xsk_socket *xsk()
+    {
+        return xsk_;
+    };
 
   private:
     explicit Socket(Platform &platform, Umem &umem)
-        : platform_(platform), xsk_(nullptr), rx_({}), umem_(umem), fd_(-1)
+        : platform_(platform), umem_(umem)
     {
     }
 
     Platform &platform_;
-    struct xsk_socket *xsk_;
-    struct xsk_ring_cons rx_;
+    struct xsk_socket *xsk_ = nullptr;
+    struct xsk_ring_cons rx_ = {};
     Umem &umem_;
-    int fd_;
-    bool native_xdp_;
+    int fd_ = -1;
+    bool native_xdp_ = false;
 };
 
 } // namespace surma::capture

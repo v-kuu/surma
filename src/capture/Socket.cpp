@@ -8,7 +8,10 @@ namespace surma::capture
 Socket::~Socket()
 {
     if (xsk_ != nullptr)
+    {
         platform_.xsk_socket__delete(xsk_);
+        xsk_ = nullptr;
+    }
 }
 
 /*
@@ -36,6 +39,7 @@ std::expected<Socket, SocketError> Socket::init(Platform &platform, Umem &u,
     if (res != 0)
     {
         spdlog::warn("XDP driver mode unavailable, falling back to SKB");
+        ret.xsk_ = nullptr;
         ret.native_xdp_ = false;
         cfg.xdp_flags = XDP_FLAGS_SKB_MODE;
         res = platform.xsk_socket__create(&ret.xsk_, iface, queue_id,

@@ -33,8 +33,8 @@ class Umem
     Umem(Umem &&other) noexcept
         : platform_(other.platform_),
           area_(std::exchange(other.area_, nullptr)),
-          umem_(std::exchange(other.umem_, nullptr)), fq_(other.fq_),
-          cq_(other.cq_)
+          umem_(std::exchange(other.umem_, nullptr)),
+          fq_(std::exchange(other.fq_, {})), cq_(std::exchange(other.cq_, {}))
     {
     }
     Umem &operator=(Umem &&) = delete;
@@ -51,10 +51,10 @@ class Umem
     }
 
     Platform &platform_;
-    void *area_;
-    struct xsk_umem *umem_;
-    struct xsk_ring_prod fq_;
-    struct xsk_ring_cons cq_;
+    void *area_ = nullptr;
+    struct xsk_umem *umem_ = nullptr;
+    struct xsk_ring_prod fq_ = {};
+    struct xsk_ring_cons cq_ = {};
 };
 
 } // namespace surma::capture

@@ -52,6 +52,7 @@ std::expected<Umem, UmemError> Umem::init(Platform &platform)
     {
         spdlog::error("xsk_umem__create failed: ret={}, errno={}, {}", res,
                       errno, std::strerror(errno));
+        platform.munmap(ret.area_, UMEM_SIZE);
         return std::unexpected(UmemError::XskErr);
     }
 

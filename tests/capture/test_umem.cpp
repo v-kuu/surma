@@ -60,16 +60,3 @@ TEST_CASE("umem destructor calls delete and unmap", "[unit][umem]")
     REQUIRE(platform.umem_delete_called);
     REQUIRE(platform.munmap_called);
 }
-
-TEST_CASE("real Linux platform can create and destroy UMEM",
-          "[integration][umem]")
-{
-    surma::capture::LinuxPlatform platform;
-
-    REQUIRE_NOTHROW(
-        [&]
-        {
-            auto umem = surma::capture::Umem::init(platform);
-            REQUIRE(umem.has_value());
-        }());
-}

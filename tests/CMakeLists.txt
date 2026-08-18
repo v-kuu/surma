@@ -3,6 +3,9 @@ find_package(Catch2 REQUIRED)
 add_executable(surma_tests
 	capture/test_umem.cpp
 	capture/test_socket.cpp
+	capture/test_xdpprogram.cpp
+	capture/test_integration.cpp
+	test_pipeline.cpp
 	test_surma.cpp
 )
 

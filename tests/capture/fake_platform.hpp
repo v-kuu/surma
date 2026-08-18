@@ -28,6 +28,16 @@ struct FakePlatform : surma::capture::Platform
     int socket_create_call_count = 0;
     int xdp_flags = 0;
 
+    // xdp prog controls
+    int setup_xdp_prog_return = 0;
+    int setup_xdp_prog_map_fd_return = 42;
+    int last_ifindex = -1;
+
+    int update_xskmap_return = 0;
+    bool update_xskmap_called = false;
+    int last_xsks_map_fd = -1;
+    xsk_socket *last_socket = nullptr;
+
     // umem fakes
     void *mmap(void *, size_t, int, int flags, int, off_t) override
     {
@@ -62,13 +72,13 @@ struct FakePlatform : surma::capture::Platform
     int xsk_socket__create(struct xsk_socket **xsk, const char *iface,
                            uint32_t queue_id, struct xsk_umem *,
                            struct xsk_ring_cons *, struct xsk_ring_prod *,
-                           const struct xsk_socket_config *) override
+                           const struct xsk_socket_config *cfg) override
     {
         last_iface = iface;
         last_queue_id = queue_id;
         socket_create_call_count++;
 
-        if (socket_drv_mode_fails && (xdp_flags & XDP_FLAGS_DRV_MODE))
+        if (socket_drv_mode_fails && (cfg->xdp_flags & XDP_FLAGS_DRV_MODE))
             return -1;
 
         if (socket_create_return == 0)
@@ -87,6 +97,25 @@ struct FakePlatform : surma::capture::Platform
         socket_delete_called = true;
         socket_delete_arg = xsk;
         socket_delete_count++;
+    }
+
+    // xdp prog fakes
+    int xsk_setup_xdp_prog(int ifindex, int *xsks_map_fd) override
+    {
+        last_ifindex = ifindex;
+        if (xsks_map_fd != nullptr)
+            *xsks_map_fd = setup_xdp_prog_map_fd_return;
+
+        return setup_xdp_prog_return;
+    }
+
+    int xsk_socket__update_xskmap(xsk_socket *xsk, int xsks_map_fd) override
+    {
+        update_xskmap_called = true;
+        last_socket = xsk;
+        last_xsks_map_fd = xsks_map_fd;
+
+        return update_xskmap_return;
     }
 };
 
