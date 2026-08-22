@@ -2,6 +2,7 @@
 #include "capture/Platform.hpp"
 #include <cstring>
 #include <linux/if_link.h>
+#include <vector>
 
 namespace surma::test
 {
@@ -15,6 +16,14 @@ struct FakePlatform : surma::capture::Platform
     bool munmap_called = false;
     bool umem_delete_called = false;
     int mmap_call_count = 0;
+
+    // fill queue controls
+    uint32_t reserve_return = XSK_RING_PROD__DEFAULT_NUM_DESCS;
+    uint32_t reserve_call_count = 0;
+    uint32_t submit_call_count = 0;
+    uint32_t last_submit_count = 0;
+    std::vector<unsigned long long> fill_addrs;
+    unsigned long long fill_addr_slot = 0;
 
     // socket controls
     int socket_create_return = 0;
@@ -37,6 +46,11 @@ struct FakePlatform : surma::capture::Platform
     bool update_xskmap_called = false;
     int last_xsks_map_fd = -1;
     xsk_socket *last_socket = nullptr;
+
+    FakePlatform()
+    {
+        fill_addrs.reserve(XSK_RING_PROD__DEFAULT_NUM_DESCS);
+    }
 
     // umem fakes
     void *mmap(void *, size_t, int, int flags, int, off_t) override
@@ -66,6 +80,28 @@ struct FakePlatform : surma::capture::Platform
     {
         umem_delete_called = true;
         return 0;
+    }
+
+    // fill queue fakes
+    uint32_t xsk_ring_prod__reserve(struct xsk_ring_prod *, int,
+                                    uint32_t *idx) override
+    {
+        reserve_call_count++;
+        *idx = 0;
+        return reserve_return;
+    }
+
+    unsigned long long *xsk_ring_prod__fill_addr(struct xsk_ring_prod *,
+                                                 uint32_t) override
+    {
+        fill_addrs.push_back(0);
+        return &fill_addrs.back();
+    }
+
+    void xsk_ring_prod__submit(struct xsk_ring_prod *, uint32_t n) override
+    {
+        submit_call_count++;
+        last_submit_count = n;
     }
 
     // socket fakes

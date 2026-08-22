@@ -19,6 +19,10 @@ TEST_CASE("real Linux platform can create and destroy UMEM",
         }());
 }
 
+/*
+ *	Due to the nature of the test setup, having multiple integration tests
+ *	bind and unbind the same socket leads to EBUSY returns
+ */
 TEST_CASE("capture layer can init and cleanup in real environment",
           "[integration][socket][xdpprogram]")
 {
