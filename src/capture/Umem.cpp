@@ -56,7 +56,33 @@ std::expected<Umem, UmemError> Umem::init(Platform &platform)
         return std::unexpected(UmemError::XskErr);
     }
 
+    auto success = ret.populate_fill_queue_();
+    if (!success)
+        return std::unexpected(success.error());
     return ret;
+}
+
+std::expected<void, UmemError> Umem::populate_fill_queue_()
+{
+    uint32_t idx;
+    uint32_t n = platform_.xsk_ring_prod__reserve(&fq_, FILL_RING_SIZE, &idx);
+    if (n == 0)
+    {
+        spdlog::error("fill queue reserve failed: ring full at bootstrap");
+        return std::unexpected(UmemError::FqErr);
+    }
+    if (n < FILL_RING_SIZE)
+        spdlog::warn("fill queue reserve returned {} of {} slots", n,
+                     FILL_RING_SIZE);
+
+    for (uint32_t i = 0; i < n; i++)
+    {
+        *platform_.xsk_ring_prod__fill_addr(&fq_, idx++) =
+            static_cast<uint64_t>(i) * FRAME_SIZE;
+    }
+
+    platform_.xsk_ring_prod__submit(&fq_, n);
+    return {};
 }
 
 } // namespace surma::capture

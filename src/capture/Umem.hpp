@@ -21,6 +21,7 @@ enum class UmemError
 {
     MapErr,
     XskErr,
+    FqErr,
 };
 
 class Umem
@@ -49,6 +50,7 @@ class Umem
     explicit Umem(Platform &platform) : platform_(platform)
     {
     }
+    std::expected<void, UmemError> populate_fill_queue_();
 
     Platform &platform_;
     void *area_ = nullptr;
