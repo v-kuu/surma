@@ -1,7 +1,48 @@
-BasedOnStyle: Microsoft
+# Allman++
+BraceWrapping: {
+  AfterClass: true,
+  AfterCaseLabel: true,
+  AfterControlStatement: Always,
+  AfterEnum: true,
+  AfterFunction: true,
+  AfterNamespace: true,
+  AfterStruct: true,
+  AfterUnion: true,
+  BeforeCatch: true,
+  BeforeElse: true,
+  IndentBraces: false,
+  SplitEmptyFunction: false
+}
+BreakBeforeBraces: Custom
+
+UseTab: ForIndentation
 IndentWidth: 4
 TabWidth: 4
-UseTab: Never
+IndentCaseLabels: true
+ConstructorInitializerIndentWidth: 4
+
 ColumnLimit: 80
-BreakBeforeBraces: Allman
+AlignAfterOpenBracket: AlwaysBreak
+BinPackArguments: false
+BinPackParameters: false
+AllowAllParametersOfDeclarationOnNextLine: false
+AlwaysBreakTemplateDeclarations: true
+AlwaysBreakBeforeMultilineStrings: true
+
+AllowShortFunctionsOnASingleLine: true
+AllowShortCaseLabelsOnASingleLine: true
+
+BreakConstructorInitializers: BeforeColon
+PackConstructorInitializers: Never
+
 PointerAlignment: Right
+DerivePointerAlignment: false
+SpaceAfterTemplateKeyword: false
+SpaceBeforeAssignmentOperators: true
+SpaceBeforeParens: ControlStatements
+
+PenaltyExcessCharacter: 100000000
+PenaltyReturnTypeOnItsOwnLine: 100000000
+Cpp11BracedListStyle: false
+SortIncludes: true
+Standard: Latest

@@ -19,44 +19,41 @@ namespace surma::capture
 
 enum class UmemError
 {
-    MapErr,
-    XskErr,
-    FqErr,
+	MapErr,
+	XskErr,
+	FqErr,
 };
 
 class Umem
 {
   public:
-    Umem() = delete;
-    ~Umem();
-    Umem(const Umem &other) = delete;
-    Umem &operator=(const Umem &other) = delete;
-    Umem(Umem &&other) noexcept
-        : platform_(other.platform_),
-          area_(std::exchange(other.area_, nullptr)),
-          umem_(std::exchange(other.umem_, nullptr)),
-          fq_(std::exchange(other.fq_, {})), cq_(std::exchange(other.cq_, {}))
-    {
-    }
-    Umem &operator=(Umem &&) = delete;
+	Umem() = delete;
+	~Umem();
+	Umem(const Umem &other) = delete;
+	Umem &operator=(const Umem &other) = delete;
+	Umem(Umem &&other) noexcept
+	    : platform_(other.platform_),
+	      area_(std::exchange(other.area_, nullptr)),
+	      umem_(std::exchange(other.umem_, nullptr)),
+	      fq_(std::exchange(other.fq_, {})),
+	      cq_(std::exchange(other.cq_, {}))
+	{}
+	Umem &operator=(Umem &&) = delete;
 
-    xsk_umem *handle()
-    {
-        return umem_;
-    };
-    static std::expected<Umem, UmemError> init(Platform &platform);
+	xsk_umem *handle() { return umem_; };
+	static std::expected<Umem, UmemError> init(Platform &platform);
 
   private:
-    explicit Umem(Platform &platform) : platform_(platform)
-    {
-    }
-    std::expected<void, UmemError> populate_fill_queue_();
+	explicit Umem(Platform &platform)
+	    : platform_(platform)
+	{}
+	std::expected<void, UmemError> populate_fill_queue_();
 
-    Platform &platform_;
-    void *area_ = nullptr;
-    struct xsk_umem *umem_ = nullptr;
-    struct xsk_ring_prod fq_ = {};
-    struct xsk_ring_cons cq_ = {};
+	Platform &platform_;
+	void *area_ = nullptr;
+	struct xsk_umem *umem_ = nullptr;
+	struct xsk_ring_prod fq_ = {};
+	struct xsk_ring_cons cq_ = {};
 };
 
 } // namespace surma::capture

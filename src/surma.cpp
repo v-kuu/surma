@@ -10,21 +10,21 @@ namespace surma
 
 void run()
 {
-    spdlog::info("surma starting up");
+	spdlog::info("surma starting up");
 
-    Config cfg = {
-        .platform = std::make_unique<capture::LinuxPlatform>(),
-        .iface = "enp6s0",
-        .queue_id = 0,
-    };
+	Config cfg = {
+		.platform = std::make_unique<capture::LinuxPlatform>(),
+		.iface = "enp6s0",
+		.queue_id = 0,
+	};
 
-    auto pipeline = Pipeline::init(cfg);
-    if (!pipeline.has_value())
-    {
-        spdlog::error("pipeline failed to initialize");
-        return;
-    }
-    spdlog::info("pipeline initialized");
+	auto pipeline = Pipeline::init(cfg);
+	if (!pipeline.has_value())
+	{
+		spdlog::error("pipeline failed to initialize");
+		return;
+	}
+	spdlog::info("pipeline initialized");
 }
 
 } // namespace surma

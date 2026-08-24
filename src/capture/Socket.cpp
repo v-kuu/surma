@@ -7,11 +7,11 @@ namespace surma::capture
 
 Socket::~Socket()
 {
-    if (xsk_ != nullptr)
-    {
-        platform_.xsk_socket__delete(xsk_);
-        xsk_ = nullptr;
-    }
+	if (xsk_ != nullptr)
+	{
+		platform_.xsk_socket__delete(xsk_);
+		xsk_ = nullptr;
+	}
 }
 
 /*
@@ -19,47 +19,61 @@ Socket::~Socket()
  *	mode if DRV mode is unavailable, deferring the XDP program loading
  *	for later
  */
-std::expected<Socket, SocketError> Socket::init(Platform &platform, Umem &u,
-                                                const char *iface,
-                                                uint32_t queue_id)
+std::expected<Socket, SocketError> Socket::init(
+    Platform &platform,
+    Umem &u,
+    const char *iface,
+    uint32_t queue_id)
 {
-    Socket ret(platform, u);
+	Socket ret(platform, u);
 
-    struct xsk_socket_config cfg = {
-        .rx_size = RX_RING_SIZE,
-        .tx_size = 0,
-        .libbpf_flags = XSK_LIBBPF_FLAGS__INHIBIT_PROG_LOAD,
-        .xdp_flags = XDP_FLAGS_DRV_MODE,
-        .bind_flags = XDP_USE_NEED_WAKEUP,
-    };
+	struct xsk_socket_config cfg = {
+		.rx_size = RX_RING_SIZE,
+		.tx_size = 0,
+		.libbpf_flags = XSK_LIBBPF_FLAGS__INHIBIT_PROG_LOAD,
+		.xdp_flags = XDP_FLAGS_DRV_MODE,
+		.bind_flags = XDP_USE_NEED_WAKEUP,
+	};
 
-    int res = platform.xsk_socket__create(&ret.xsk_, iface, queue_id,
-                                          ret.umem_.handle(), &ret.rx_, nullptr,
-                                          &cfg);
-    if (res != 0)
-    {
-        spdlog::warn("XDP driver mode unavailable, falling back to SKB");
-        ret.xsk_ = nullptr;
-        ret.native_xdp_ = false;
-        cfg.xdp_flags = XDP_FLAGS_SKB_MODE;
-        res = platform.xsk_socket__create(&ret.xsk_, iface, queue_id,
-                                          ret.umem_.handle(), &ret.rx_, nullptr,
-                                          &cfg);
-        if (res != 0)
-        {
-            spdlog::error("xsk_socket__create failed: {} ({})", -res,
-                          std::strerror(-res));
-            return std::unexpected(SocketError::SockErr);
-        }
-    }
-    else
-    {
-        spdlog::info("XDP driver mode enabled");
-        ret.native_xdp_ = true;
-    }
-    ret.fd_ = platform.xsk_socket__fd(ret.xsk_);
+	int res = platform.xsk_socket__create(
+	    &ret.xsk_,
+	    iface,
+	    queue_id,
+	    ret.umem_.handle(),
+	    &ret.rx_,
+	    nullptr,
+	    &cfg);
+	if (res != 0)
+	{
+		spdlog::warn("XDP driver mode unavailable, falling back to SKB");
+		ret.xsk_ = nullptr;
+		ret.native_xdp_ = false;
+		cfg.xdp_flags = XDP_FLAGS_SKB_MODE;
+		res = platform.xsk_socket__create(
+		    &ret.xsk_,
+		    iface,
+		    queue_id,
+		    ret.umem_.handle(),
+		    &ret.rx_,
+		    nullptr,
+		    &cfg);
+		if (res != 0)
+		{
+			spdlog::error(
+			    "xsk_socket__create failed: {} ({})",
+			    -res,
+			    std::strerror(-res));
+			return std::unexpected(SocketError::SockErr);
+		}
+	}
+	else
+	{
+		spdlog::info("XDP driver mode enabled");
+		ret.native_xdp_ = true;
+	}
+	ret.fd_ = platform.xsk_socket__fd(ret.xsk_);
 
-    return ret;
+	return ret;
 }
 
 } // namespace surma::capture
