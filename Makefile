@@ -6,7 +6,7 @@ SANITIZER ?= address,undefined
 NETWORK_FIXTURE := ./tests/capture/network_fixture.sh
 TEST_BINARY := ./$(BUILD_DIR)/tests/surma_tests
 
-.PHONY: bootstrap install configure build test integration integration-setup integration-test integration-clean run clean rebuild coverage coverage-clean vuln-scan san san-address san-thread san-memory hugepages
+.PHONY: bootstrap install configure build test integration integration-setup integration-test integration-clean run clean rebuild fresh coverage coverage-clean vuln-scan san san-address san-thread san-memory hugepages
 
 bootstrap:
 	$(MAKE) install
@@ -43,11 +43,19 @@ run:
 	sudo ./$(BUILD_DIR)/surma
 
 clean:
-	ninja -C $(BUILD_DIR) clean
+	cmake --build --preset $(PRESET) --target clean
 
-rebuild: clean build
+rebuild:
+	cmake --build --preset $(PRESET) --clean-first
 
-coverage: SURMA_COVERAGE=ON
+fresh:
+	@test "$(BUILD_DIR)" = "build/Debug" || { \
+		echo "ERROR: refusing to delete unexpected BUILD_DIR='$(BUILD_DIR)'"; \
+		exit 1; \
+	}
+	rm -rf -- "$(BUILD_DIR)"
+	$(MAKE) bootstrap
+
 coverage: coverage-clean
 	cmake --preset $(PRESET) -DSURMA_COVERAGE=ON
 	cmake --build --preset $(PRESET)
