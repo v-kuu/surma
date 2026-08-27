@@ -10,12 +10,12 @@ namespace surma::capture
 EpollFd::~EpollFd()
 {
 	if (fd_ >= 0)
-		close(fd_);
+		platform_.close(fd_);
 }
 
-std::expected<EpollFd, EpollErr> EpollFd::init(int xsk_fd)
+std::expected<EpollFd, EpollErr> EpollFd::init(Platform &platform, int xsk_fd)
 {
-	int epfd = epoll_create1(EPOLL_CLOEXEC);
+	int epfd = platform.epoll_create1(EPOLL_CLOEXEC);
 	if (epfd < 0)
 	{
 		spdlog::error(
@@ -27,14 +27,14 @@ std::expected<EpollFd, EpollErr> EpollFd::init(int xsk_fd)
 	// TODO: consider edge-triggered (EPOLLET)
 	ev.events = EPOLLIN;
 	ev.data.fd = xsk_fd;
-	if (epoll_ctl(epfd, EPOLL_CTL_ADD, xsk_fd, &ev) < 0)
+	if (platform.epoll_ctl(epfd, EPOLL_CTL_ADD, xsk_fd, &ev) < 0)
 	{
 		spdlog::error("epoll_ctl failed: {} ({})", errno, std::strerror(errno));
-		close(epfd);
+		platform.close(epfd);
 		return std::unexpected(EpollErr::CtlErr);
 	}
 
-	return EpollFd{ epfd };
+	return EpollFd{ platform, epfd };
 }
 
 } // namespace surma::capture

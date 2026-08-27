@@ -1,3 +1,4 @@
+#include "capture/EpollFd.hpp"
 #include "capture/Socket.hpp"
 #include "capture/Umem.hpp"
 #include "capture/XdpProgram.hpp"
@@ -24,7 +25,7 @@ TEST_CASE(
  */
 TEST_CASE(
     "capture layer can init and cleanup in real environment",
-    "[integration][socket][xdpprogram]")
+    "[integration][socket][xdpprogram][epollfd]")
 {
 	LinuxPlatform platform;
 	auto umem = surma::capture::Umem::init(platform);
@@ -40,5 +41,8 @@ TEST_CASE(
 
 		auto result = program->attach(platform, socket.value());
 		REQUIRE(result.has_value());
+
+		auto epoll = EpollFd::init(platform, socket->fd());
+		REQUIRE(epoll.has_value());
 	}
 }

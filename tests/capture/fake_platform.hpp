@@ -49,6 +49,16 @@ struct FakePlatform : surma::capture::Platform
 
 	FakePlatform() { fill_addrs.reserve(XSK_RING_PROD__DEFAULT_NUM_DESCS); }
 
+	// epoll controls
+	int epoll_create_return = 42;
+	int epoll_ctl_return = 0;
+	bool epoll_create_called = false;
+	bool epoll_ctl_called = false;
+	int close_call_count = 0;
+	int last_close_fd = -1;
+	int last_epoll_ctl_op = -1;
+	int last_epoll_ctl_fd = -1;
+
 	// umem fakes
 	void *mmap(void *, size_t, int, int flags, int, off_t) override
 	{
@@ -158,6 +168,28 @@ struct FakePlatform : surma::capture::Platform
 		last_xsks_map_fd = xsks_map_fd;
 
 		return update_xskmap_return;
+	}
+
+	// epoll fakes
+	int epoll_create1(int) override
+	{
+		epoll_create_called = true;
+		return epoll_create_return;
+	}
+
+	int epoll_ctl(int, int op, int fd, struct epoll_event *) override
+	{
+		epoll_ctl_called = true;
+		last_epoll_ctl_op = op;
+		last_epoll_ctl_fd = fd;
+		return epoll_ctl_return;
+	}
+
+	int close(int fd) override
+	{
+		close_call_count++;
+		last_close_fd = fd;
+		return 0;
 	}
 };
 

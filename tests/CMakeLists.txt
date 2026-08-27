@@ -4,6 +4,7 @@ add_executable(surma_tests
 	capture/test_umem.cpp
 	capture/test_socket.cpp
 	capture/test_xdpprogram.cpp
+	capture/test_epollfd.cpp
 	capture/test_integration.cpp
 	test_pipeline.cpp
 	test_surma.cpp

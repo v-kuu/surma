@@ -1,5 +1,6 @@
 #pragma once
 
+#include "capture/Platform.hpp"
 #include <expected>
 #include <utility>
 
@@ -21,15 +22,20 @@ class EpollFd
 	EpollFd(const EpollFd &other) = delete;
 	EpollFd &operator=(const EpollFd &other) = delete;
 	EpollFd(EpollFd &&other) noexcept
-	    : fd_(std::exchange(other.fd_, -1))
+	    : platform_(other.platform_),
+	      fd_(std::exchange(other.fd_, -1))
 	{}
 
-	static std::expected<EpollFd, EpollErr> init(int xsk_fd);
+	static std::expected<EpollFd, EpollErr> init(
+	    Platform &platform,
+	    int xsk_fd);
 
   private:
-	explicit EpollFd(int epfd)
-	    : fd_(epfd)
+	explicit EpollFd(Platform &platform, int epfd)
+	    : platform_(platform),
+	      fd_(epfd)
 	{}
+	Platform &platform_;
 	int fd_ = -1;
 };
 

@@ -1,6 +1,8 @@
 #pragma once
 #include <cstdint>
+#include <sys/epoll.h>
 #include <sys/mman.h>
+#include <unistd.h>
 #include <xdp/xsk.h>
 
 namespace surma::capture
@@ -53,6 +55,10 @@ struct Platform
 	virtual int xsk_socket__fd(struct xsk_socket *xsk) = 0;
 	virtual int xsk_setup_xdp_prog(int ifindex, int *xsks_map_fd) = 0;
 	virtual int xsk_socket__update_xskmap(xsk_socket *xsk, int xsks_map_fd) = 0;
+
+	virtual int epoll_create1(int flags) = 0;
+	virtual int epoll_ctl(int epfd, int op, int fd, struct epoll_event *ev) = 0;
+	virtual int close(int fd) = 0;
 };
 
 // Production implementation simply calls the real functions
@@ -141,6 +147,15 @@ struct LinuxPlatform : Platform
 	{
 		return ::xsk_socket__update_xskmap(xsk, xsks_map_fd);
 	}
+
+	int epoll_create1(int flags) override { return ::epoll_create1(flags); }
+
+	int epoll_ctl(int epfd, int op, int fd, struct epoll_event *ev) override
+	{
+		return ::epoll_ctl(epfd, op, fd, ev);
+	}
+
+	int close(int fd) override { return ::close(fd); }
 };
 
 } // namespace surma::capture

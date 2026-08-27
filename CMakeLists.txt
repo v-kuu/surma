@@ -28,6 +28,7 @@ add_library(surma_lib STATIC
 	src/capture/Umem.cpp
 	src/capture/Socket.cpp
 	src/capture/XdpProgram.cpp
+	src/capture/EpollFd.cpp
 )
 target_include_directories(surma_lib PRIVATE ${XDP_INCLUDE_DIRS})
 target_include_directories(surma_lib PUBLIC src/)
