@@ -39,6 +39,15 @@ std::expected<Pipeline, PipelineError> Pipeline::init(Config &cfg)
 
 	if (auto result = xdp.value().attach(*cfg.platform, *ret.socket_); !result)
 		return std::unexpected(PipelineError::XdpProgramFailed);
+
+	auto EpollFd = capture::EpollFd::init(*cfg.platform, ret.socket_->fd())
+	                   .transform_error([](capture::EpollErr) {
+		                   return PipelineError::EpollFdFailed;
+	                   });
+	if (!EpollFd.has_value())
+		return std::unexpected(EpollFd.error());
+	ret.fd_ = std::make_unique<capture::EpollFd>(std::move(EpollFd.value()));
+
 	return ret;
 }
 

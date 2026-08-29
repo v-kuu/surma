@@ -1,6 +1,7 @@
 #pragma once
 
 #include "Config.hpp"
+#include "capture/EpollFd.hpp"
 #include "capture/Socket.hpp"
 #include "capture/Umem.hpp"
 
@@ -15,6 +16,7 @@ enum class PipelineError
 	UmemInitFailed,
 	SocketInitFailed,
 	XdpProgramFailed,
+	EpollFdFailed,
 	PipelineError
 };
 
@@ -35,6 +37,7 @@ class Pipeline
 	std::unique_ptr<capture::Platform> platform_;
 	std::unique_ptr<capture::Umem> umem_;
 	std::unique_ptr<capture::Socket> socket_;
+	std::unique_ptr<capture::EpollFd> fd_;
 };
 
 } // namespace surma
