@@ -9,46 +9,37 @@ std::expected<Pipeline, PipelineError> Pipeline::init(Config &cfg)
 {
 	Pipeline ret;
 
-	auto umem = capture::Umem::init(*cfg.platform)
-	                .transform_error([](capture::UmemError) {
-		                return PipelineError::UmemInitFailed;
-	                });
+	auto umem = capture::Umem::init(*cfg.platform);
 	if (!umem.has_value())
-		return std::unexpected(umem.error());
+		return std::unexpected(PipelineError::UmemInitFailed);
 	ret.umem_ = std::make_unique<capture::Umem>(std::move(umem.value()));
 
-	auto socket =
-	    capture::Socket::init(
-	        *cfg.platform, *ret.umem_, cfg.iface.c_str(), cfg.queue_id)
-	        .transform_error([](capture::SocketError) {
-		        return PipelineError::SocketInitFailed;
-	        });
+	auto socket = capture::Socket::init(
+	    *cfg.platform, *ret.umem_, cfg.iface.c_str(), cfg.queue_id);
 	if (!socket.has_value())
-		return std::unexpected(socket.error());
+		return std::unexpected(PipelineError::SocketInitFailed);
 	ret.socket_ = std::make_unique<capture::Socket>(std::move(socket.value()));
 
 	unsigned int ifindex = if_nametoindex(cfg.iface.c_str());
 	auto xdp =
-	    capture::XdpProgram::load(*cfg.platform, static_cast<int>(ifindex))
-	        .transform_error([](capture::XdpError) {
-		        return PipelineError::XdpProgramFailed;
-	        });
+	    capture::XdpProgram::load(*cfg.platform, static_cast<int>(ifindex));
 
 	if (!xdp.has_value())
-		return std::unexpected(xdp.error());
+		return std::unexpected(PipelineError::XdpProgramFailed);
 
 	if (auto result = xdp.value().attach(*cfg.platform, *ret.socket_); !result)
 		return std::unexpected(PipelineError::XdpProgramFailed);
 
-	auto EpollFd = capture::EpollFd::init(*cfg.platform, ret.socket_->fd())
-	                   .transform_error([](capture::EpollErr) {
-		                   return PipelineError::EpollFdFailed;
-	                   });
-	if (!EpollFd.has_value())
-		return std::unexpected(EpollFd.error());
-	ret.fd_ = std::make_unique<capture::EpollFd>(std::move(EpollFd.value()));
+	auto loop = capture::RxLoop::init(*cfg.platform, *ret.socket_, *ret.umem_);
+	if (!loop.has_value())
+		return std::unexpected(PipelineError::RxLoopInitFailed);
+	ret.loop_ = std::make_unique<capture::RxLoop>(std::move(loop.value()));
 
 	return ret;
 }
+
+void Pipeline::run() { loop_->run(); }
+
+void Pipeline::stop() { loop_->stop(); }
 
 } // namespace surma

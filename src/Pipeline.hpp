@@ -1,7 +1,7 @@
 #pragma once
 
 #include "Config.hpp"
-#include "capture/EpollFd.hpp"
+#include "capture/RxLoop.hpp"
 #include "capture/Socket.hpp"
 #include "capture/Umem.hpp"
 
@@ -16,7 +16,7 @@ enum class PipelineError
 	UmemInitFailed,
 	SocketInitFailed,
 	XdpProgramFailed,
-	EpollFdFailed,
+	RxLoopInitFailed,
 	PipelineError
 };
 
@@ -30,6 +30,8 @@ class Pipeline
 	Pipeline &operator=(Pipeline &&) noexcept = default;
 
 	static std::expected<Pipeline, PipelineError> init(Config &cfg);
+	void run();
+	void stop();
 
   private:
 	Pipeline() = default;
@@ -37,7 +39,7 @@ class Pipeline
 	std::unique_ptr<capture::Platform> platform_;
 	std::unique_ptr<capture::Umem> umem_;
 	std::unique_ptr<capture::Socket> socket_;
-	std::unique_ptr<capture::EpollFd> fd_;
+	std::unique_ptr<capture::RxLoop> loop_;
 };
 
 } // namespace surma

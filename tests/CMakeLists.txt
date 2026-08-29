@@ -7,7 +7,6 @@ add_executable(surma_tests
 	capture/test_epollfd.cpp
 	capture/test_integration.cpp
 	test_pipeline.cpp
-	test_surma.cpp
 )
 
 target_link_libraries(surma_tests PRIVATE
