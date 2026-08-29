@@ -39,6 +39,7 @@ class Socket
 	    uint32_t queue_id);
 	[[nodiscard]] int fd() const { return fd_; };
 	xsk_socket *xsk() { return xsk_; };
+	xsk_ring_cons &rx() { return rx_; };
 
   private:
 	explicit Socket(Platform &platform, Umem &umem)

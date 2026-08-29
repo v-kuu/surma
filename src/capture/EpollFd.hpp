@@ -30,6 +30,8 @@ class EpollFd
 	    Platform &platform,
 	    int xsk_fd);
 
+	[[nodiscard]] int fd() const { return fd_; }
+
   private:
 	explicit EpollFd(Platform &platform, int epfd)
 	    : platform_(platform),

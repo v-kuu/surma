@@ -40,7 +40,9 @@ class Umem
 	{}
 	Umem &operator=(Umem &&) = delete;
 
+	void *area() { return area_; };
 	xsk_umem *handle() { return umem_; };
+	xsk_ring_prod &fq() { return fq_; };
 	static std::expected<Umem, UmemError> init(Platform &platform);
 
   private:
