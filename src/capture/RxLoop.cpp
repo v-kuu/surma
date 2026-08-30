@@ -31,7 +31,7 @@ void RxLoop::run()
 
 	while (running_.load(std::memory_order_relaxed))
 	{
-		int ready = epoll_wait(epoll_.fd(), events, 1, -1);
+		int ready = epoll_wait(epoll_.fd(), events, 1, 500);
 
 		if (ready < 0)
 		{

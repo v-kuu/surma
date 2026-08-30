@@ -51,7 +51,9 @@ void ProcessingThread::run_()
 		}
 	}
 
-	while (true)
+	constexpr int MAX_DRAIN = FRAME_COUNT;
+	int drained = 0;
+	while (drained++ < MAX_DRAIN)
 	{
 		auto desc = rx_queue_.pop();
 		if (!desc.has_value())

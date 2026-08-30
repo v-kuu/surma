@@ -2,6 +2,7 @@
 #include "capture/Socket.hpp"
 #include "capture/Umem.hpp"
 #include "capture/XdpProgram.hpp"
+#include "processing/counting_processor.hpp"
 #include <catch2/catch_test_macros.hpp>
 #include <net/if.h>
 
@@ -27,12 +28,12 @@ TEST_CASE(
  *	bind and unbind the same socket leads to EBUSY returns
  */
 TEST_CASE(
-    "capture layer can init and cleanup in real environment",
-    "[integration][socket][xdpprogram][epollfd][rxloop]")
+    "capture layer works in real environment",
+    "[integration][socket][xdpprogram][epollfd][rxloop][processingthread]")
 {
-	// constexpr int PACKET_COUNT = 10;
-	// constexpr int TIMEOUT_MS = 3000;
-	// std::atomic<int> received{0};
+	constexpr int PACKET_COUNT = 10;
+	constexpr int TIMEOUT_MS = 3000;
+	std::atomic<int> received{ 0 };
 
 	LinuxPlatform platform;
 	auto umem = Umem::init(platform);
@@ -55,35 +56,38 @@ TEST_CASE(
 		    RxLoop::init(platform, socket.value(), umem.value(), RxQ, CompQ);
 		REQUIRE(loop.has_value());
 
-		/*
-		std::thread loop_thread([&]() { loop->run(); });
-		std::this_thread::sleep_for(std::chrono::milliseconds(100));
+		CountingProcessor Proc(umem.value(), RxQ, CompQ, received);
 
-		int ret = std::system(
-		        "python3 -c \""
-		        "from scapy.all import *; "
-		        "pkts = [Ether()/IP(src='10.99.0.1', dst='10.99.0.2')/"
-		        "UDP(sport=9999, dport=9999)/Raw(b'surma integration test') "
-		        "for _ in range(10)]; "
-		        "sendp(pkts, iface='veth-test', verbose=False)"
-		        "\""
-		        );
-		REQUIRE(ret == 0);
+		struct Guard
+		{
+			RxLoop &loop;
+			std::thread &loop_thread;
+			CountingProcessor &proc;
+
+			~Guard()
+			{
+				loop.stop();
+				if (loop_thread.joinable())
+					loop_thread.join();
+				proc.stop();
+			}
+		};
+
+		Proc.start();
+		std::thread loop_thread([&]() { loop->run(); });
+		Guard guard{ .loop = *loop, .loop_thread = loop_thread, .proc = Proc };
+		std::this_thread::sleep_for(std::chrono::milliseconds(500));
 
 		auto deadline = std::chrono::steady_clock::now() +
-		    std::chrono::milliseconds(TIMEOUT_MS);
+		                std::chrono::milliseconds(TIMEOUT_MS);
 		while (received.load(std::memory_order_relaxed) < PACKET_COUNT)
 		{
-		    if (std::chrono::steady_clock::now() > deadline)
-		        break;
-		    std::this_thread::sleep_for(std::chrono::milliseconds(10));
+			if (std::chrono::steady_clock::now() > deadline)
+				break;
+			std::this_thread::sleep_for(std::chrono::milliseconds(10));
 		}
 
-		loop->stop();
-		loop_thread.join();
-
 		REQUIRE(received.load() == PACKET_COUNT);
-		*/
 	}
 }
 

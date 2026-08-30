@@ -41,8 +41,19 @@ case "${1:-}" in
         echo "Removed $NS"
         ;;
 
+	inject)
+		VETH_MAC=$(ip netns exec "$NS" cat /sys/class/net/$TEST_IF/address)
+		python3 -c "
+		from scapy.all import *
+		sendp([Ether(dst='$VETH_MAC')/IP(src='10.99.0.1',dst='10.99.0.2')/
+			UDP(sport=9999,dport=9999)/Raw(b'surma integration test')
+			for _ in range(10)], iface='$HOST_IF', verbose=False)
+		"
+		echo "Injected 10 packets to $HOST_IF"
+		;;
+
     *)
-        echo "usage: $0 {setup|teardown}"
+        echo "usage: $0 {setup|teardown|inject}"
         exit 1
         ;;
 esac
