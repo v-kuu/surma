@@ -4,6 +4,7 @@
 #include "capture/RxLoop.hpp"
 #include "capture/Socket.hpp"
 #include "capture/Umem.hpp"
+#include "processing/ProcessingThread.hpp"
 
 #include <expected>
 #include <memory>
@@ -19,6 +20,9 @@ enum class PipelineError
 	RxLoopInitFailed,
 	PipelineError
 };
+
+using RxQueue = surma::queue::SpscQueue<PacketDescriptor, FRAME_COUNT>;
+using CompQueue = surma::queue::SpscQueue<uint64_t, FRAME_COUNT>;
 
 class Pipeline
 {
@@ -36,10 +40,13 @@ class Pipeline
   private:
 	Pipeline() = default;
 
+	std::unique_ptr<RxQueue> rx_queue_;
+	std::unique_ptr<CompQueue> comp_queue_;
 	std::unique_ptr<capture::Platform> platform_;
 	std::unique_ptr<capture::Umem> umem_;
 	std::unique_ptr<capture::Socket> socket_;
 	std::unique_ptr<capture::RxLoop> loop_;
+	std::unique_ptr<processing::ProcessingThread> processor_;
 };
 
 } // namespace surma

@@ -31,8 +31,31 @@ void ProcessingThread::run_()
 		uint32_t len = desc->len;
 
 		process_packet_(pkt, len);
+
+		// handle backpressure
+		uint32_t retries = 0;
 		while (!comp_queue_.push(desc->addr))
-			;
+		{
+			if (++retries > 1000)
+			{
+				spdlog::warn(
+				    "completion queue full after {} retries, dropping frame "
+				    "{:x}",
+				    retries,
+				    desc->addr);
+				break;
+			}
+			std::this_thread::yield();
+		}
+	}
+
+	while (true)
+	{
+		auto desc = rx_queue_.pop();
+		if (!desc.has_value())
+			break;
+		process_packet_(umem_area + desc->addr, desc->len);
+		comp_queue_.push(desc->addr);
 	}
 }
 

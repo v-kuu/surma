@@ -30,16 +30,33 @@ std::expected<Pipeline, PipelineError> Pipeline::init(Config &cfg)
 	if (auto result = xdp.value().attach(*cfg.platform, *ret.socket_); !result)
 		return std::unexpected(PipelineError::XdpProgramFailed);
 
-	auto loop = capture::RxLoop::init(*cfg.platform, *ret.socket_, *ret.umem_);
+	ret.rx_queue_ = std::make_unique<RxQueue>();
+	ret.comp_queue_ = std::make_unique<CompQueue>();
+	auto loop = capture::RxLoop::init(
+	    *cfg.platform,
+	    *ret.socket_,
+	    *ret.umem_,
+	    *ret.rx_queue_,
+	    *ret.comp_queue_);
 	if (!loop.has_value())
 		return std::unexpected(PipelineError::RxLoopInitFailed);
 	ret.loop_ = std::make_unique<capture::RxLoop>(std::move(loop.value()));
+	ret.processor_ = std::make_unique<processing::ProcessingThread>(
+	    *ret.umem_, *ret.rx_queue_, *ret.comp_queue_);
 
 	return ret;
 }
 
-void Pipeline::run() { loop_->run(); }
+void Pipeline::run()
+{
+	processor_->start();
+	loop_->run();
+}
 
-void Pipeline::stop() { loop_->stop(); }
+void Pipeline::stop()
+{
+	loop_->stop();
+	processor_->stop();
+}
 
 } // namespace surma
