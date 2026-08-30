@@ -38,18 +38,17 @@ class Pipeline
   private:
 	Pipeline() = default;
 
-	using RxQueue = surma::queue::SpscQueue<PacketDescriptor, FRAME_COUNT>;
+	using RxQueue =
+	    surma::queue::SpscQueue<capture::PacketDescriptor, FRAME_COUNT>;
 	using CompQueue = surma::queue::SpscQueue<uint64_t, FRAME_COUNT>;
-	using LoopType = capture::RxLoop<RxQueue, CompQueue>;
-	using ProcType = processing::ProcessingThread<RxQueue, CompQueue>;
 
 	std::unique_ptr<RxQueue> rx_queue_;
 	std::unique_ptr<CompQueue> comp_queue_;
 	std::unique_ptr<capture::Platform> platform_;
 	std::unique_ptr<capture::Umem> umem_;
 	std::unique_ptr<capture::Socket> socket_;
-	std::unique_ptr<LoopType> loop_;
-	std::unique_ptr<ProcType> processor_;
+	std::unique_ptr<capture::RxLoop> loop_;
+	std::unique_ptr<processing::ProcessingThread> processor_;
 };
 
 } // namespace surma

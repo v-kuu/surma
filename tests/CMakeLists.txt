@@ -5,9 +5,9 @@ add_executable(surma_tests
 	capture/test_socket.cpp
 	capture/test_xdpprogram.cpp
 	capture/test_epollfd.cpp
-	capture/test_integration.cpp
 	queue/test_spscqueue.cpp
 	test_pipeline.cpp
+	test_integration.cpp
 )
 
 target_link_libraries(surma_tests PRIVATE
