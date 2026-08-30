@@ -12,13 +12,15 @@ namespace surma::capture
 std::expected<RxLoop, RxLoopError> RxLoop::init(
     Platform &platform,
     Socket &socket,
-    Umem &umem)
+    Umem &umem,
+    RxQueue &rx_queue,
+    CompQueue &comp_queue)
 {
 	auto epoll = EpollFd::init(platform, socket.fd());
 	if (!epoll.has_value())
 		return std::unexpected(RxLoopError::EpollFdErr);
 
-	return RxLoop(socket, umem, std::move(epoll.value()));
+	return RxLoop(socket, umem, std::move(epoll.value()), rx_queue, comp_queue);
 }
 
 void RxLoop::run()
@@ -50,45 +52,50 @@ void RxLoop::run()
 		if (n == 0)
 			continue;
 
-		process_batch_(idx_rx, n);
+		for (uint32_t i = 0; i < n; i++)
+		{
+			const struct xdp_desc *desc =
+			    xsk_ring_cons__rx_desc(&socket_.rx(), idx_rx + i);
+			PacketDescriptor pd{ .addr = desc->addr, .len = desc->len };
+			if (!rx_queue_.push(pd))
+				spdlog::warn(
+				    "rx queue full, dropping packet addr={:#x}", desc->addr);
+		}
 		xsk_ring_cons__release(&socket_.rx(), n);
-		refill_(idx_rx, n);
+		drain_completions_();
 	}
 }
 
 void RxLoop::stop() { running_.store(false, std::memory_order_relaxed); }
 
-void RxLoop::process_batch_(uint32_t idx_rx, uint32_t n)
-{
-	auto umem_area = static_cast<uint8_t *>(umem_.area());
-
-	for (uint32_t i = 0; i < n; i++)
-	{
-		const struct xdp_desc *desc =
-		    xsk_ring_cons__rx_desc(&socket_.rx(), idx_rx + i);
-		uint8_t *pkt = umem_area + desc->addr;
-		uint32_t len = desc->len;
-
-		// TODO: process packet
-		spdlog::debug("rx packet len={} addr={:#x}", len, *pkt);
-	}
-}
-
-void RxLoop::refill_(uint32_t idx_rx, uint32_t n)
+void RxLoop::drain_completions_()
 {
 	uint32_t idx_fq;
-	uint32_t reserved = xsk_ring_prod__reserve(&umem_.fq(), n, &idx_fq);
+	uint32_t count = 0;
 
-	if (reserved < n)
+	uint64_t completed[BATCH_SIZE];
+	while (count < BATCH_SIZE)
+	{
+		auto addr = comp_queue_.pop();
+		if (!addr.has_value())
+			break;
+		completed[count++] = *addr;
+	}
+
+	if (count == 0)
+		return;
+
+	uint32_t reserved = xsk_ring_prod__reserve(&umem_.fq(), count, &idx_fq);
+
+	if (reserved < count)
 		spdlog::warn(
-		    "fill queue reserve returned {}/{} slots - fill queue draining",
+		    "fill queue reserve returned {}/{} slots - draining",
 		    reserved,
-		    n);
+		    count);
 
 	for (uint32_t i = 0; i < reserved; i++)
 	{
-		*xsk_ring_prod__fill_addr(&umem_.fq(), idx_fq + i) =
-		    static_cast<uint64_t>(idx_rx + i) * FRAME_SIZE;
+		*xsk_ring_prod__fill_addr(&umem_.fq(), idx_fq + i) = completed[i];
 	}
 
 	xsk_ring_prod__submit(&umem_.fq(), reserved);
