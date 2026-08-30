@@ -6,6 +6,7 @@ add_executable(surma_tests
 	capture/test_xdpprogram.cpp
 	capture/test_epollfd.cpp
 	capture/test_integration.cpp
+	queue/test_spscqueue.cpp
 	test_pipeline.cpp
 )
 
