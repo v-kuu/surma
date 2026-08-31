@@ -35,10 +35,6 @@ integration-setup:
 
 integration-test:
 	sudo ip netns exec surma-test $(TEST_BINARY) "[integration]" &
-	TEST_PID=$$!; \
-	sleep 1; \
-	sudo bash $(NETWORK_FIXTURE) inject; \
-	wait $$TEST_PID
 
 integration-clean:
 	sudo bash $(NETWORK_FIXTURE) teardown

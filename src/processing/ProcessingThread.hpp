@@ -15,7 +15,7 @@ class ProcessingThread
 {
   public:
 	ProcessingThread() = delete;
-	virtual ~ProcessingThread() { stop(); }
+	~ProcessingThread() { stop(); }
 	ProcessingThread(const ProcessingThread &) = delete;
 	ProcessingThread &operator=(const ProcessingThread &) = delete;
 	ProcessingThread(ProcessingThread &&) = delete;
@@ -35,7 +35,7 @@ class ProcessingThread
 	void stop();
 
   protected:
-	virtual void process_packet_(uint8_t *pkt, uint32_t len);
+	void process_packet_(uint8_t *pkt, uint32_t len);
 
   private:
 	void run_();

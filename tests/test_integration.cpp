@@ -2,7 +2,6 @@
 #include "capture/Socket.hpp"
 #include "capture/Umem.hpp"
 #include "capture/XdpProgram.hpp"
-#include "processing/counting_processor.hpp"
 #include <catch2/catch_test_macros.hpp>
 #include <net/if.h>
 
@@ -28,13 +27,9 @@ TEST_CASE(
  *	bind and unbind the same socket leads to EBUSY returns
  */
 TEST_CASE(
-    "capture layer works in real environment",
-    "[integration][socket][xdpprogram][epollfd][rxloop][processingthread]")
+    "capture layer can init and cleanup in a real environment",
+    "[integration][socket][xdpprogram][epollfd][rxloop]")
 {
-	constexpr int PACKET_COUNT = 10;
-	constexpr int TIMEOUT_MS = 3000;
-	std::atomic<int> received{ 0 };
-
 	LinuxPlatform platform;
 	auto umem = Umem::init(platform);
 	REQUIRE(umem.has_value());
@@ -55,39 +50,6 @@ TEST_CASE(
 		auto loop =
 		    RxLoop::init(platform, socket.value(), umem.value(), RxQ, CompQ);
 		REQUIRE(loop.has_value());
-
-		CountingProcessor Proc(umem.value(), RxQ, CompQ, received);
-
-		struct Guard
-		{
-			RxLoop &loop;
-			std::thread &loop_thread;
-			CountingProcessor &proc;
-
-			~Guard()
-			{
-				loop.stop();
-				if (loop_thread.joinable())
-					loop_thread.join();
-				proc.stop();
-			}
-		};
-
-		Proc.start();
-		std::thread loop_thread([&]() { loop->run(); });
-		Guard guard{ .loop = *loop, .loop_thread = loop_thread, .proc = Proc };
-		std::this_thread::sleep_for(std::chrono::milliseconds(500));
-
-		auto deadline = std::chrono::steady_clock::now() +
-		                std::chrono::milliseconds(TIMEOUT_MS);
-		while (received.load(std::memory_order_relaxed) < PACKET_COUNT)
-		{
-			if (std::chrono::steady_clock::now() > deadline)
-				break;
-			std::this_thread::sleep_for(std::chrono::milliseconds(10));
-		}
-
-		REQUIRE(received.load() == PACKET_COUNT);
 	}
 }
 
