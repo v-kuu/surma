@@ -57,7 +57,7 @@ parse_result PacketParser::parse_ipv4_(
 
 	auto *ip = reinterpret_cast<const struct iphdr *>(pkt + offset);
 
-	// IP header length (ihl) is in bits
+	// IP header length (ihl) is in 32bit words
 	uint32_t ihl = ip->ihl * 4;
 	if (ihl < sizeof(struct iphdr))
 		return std::unexpected(ParseError::Malformed);
@@ -112,18 +112,23 @@ parse_result PacketParser::parse_ipv6_(
 	uint32_t remaining = ntohs(ip6->payload_len);
 
 	parse_result ret = std::unexpected(ParseError::Unsupported);
-	while (true)
+
+	bool reading = true;
+	while (reading)
 	{
 		switch (next_header)
 		{
 			case IPPROTO_TCP:
 				ret = parse_tcp_(pkt, len, ext_offset, remaining);
+				reading = false;
 				break;
 			case IPPROTO_UDP:
 				ret = parse_udp_(pkt, len, ext_offset, remaining);
+				reading = false;
 				break;
 			case IPPROTO_ICMPV6:
 				ret = parse_icmpv6_(pkt, len, ext_offset);
+				reading = false;
 				break;
 			case IPPROTO_HOPOPTS:
 			case IPPROTO_ROUTING:
@@ -179,11 +184,11 @@ parse_result PacketParser::parse_tcp_(
 	flow.src_port = tcp->source;
 	flow.dst_port = tcp->dest;
 
-	parse_result ret{};
-	ret->flow = flow;
-	ret->tcp_flags = reinterpret_cast<const uint8_t *>(tcp)[13]; // flag trick
-	ret->payload = pkt + offset + doff;
-	ret->payload_len = static_cast<uint16_t>(remaining - doff);
+	ParsedPacket ret{};
+	ret.flow = flow;
+	ret.tcp_flags = reinterpret_cast<const uint8_t *>(tcp)[13]; // flag trick
+	ret.payload = pkt + offset + doff;
+	ret.payload_len = static_cast<uint16_t>(remaining - doff);
 
 	return ret;
 }
@@ -213,11 +218,11 @@ parse_result PacketParser::parse_udp_(
 	flow.src_port = udp->source;
 	flow.dst_port = udp->dest;
 
-	parse_result ret{};
-	ret->flow = flow;
-	ret->tcp_flags = 0;
-	ret->payload = pkt + offset + sizeof(struct udphdr);
-	ret->payload_len = udp_len - sizeof(struct udphdr);
+	ParsedPacket ret{};
+	ret.flow = flow;
+	ret.tcp_flags = 0;
+	ret.payload = pkt + offset + sizeof(struct udphdr);
+	ret.payload_len = udp_len - sizeof(struct udphdr);
 	return ret;
 }
 
@@ -235,11 +240,11 @@ parse_result PacketParser::parse_icmp_(
 	flow.src_port = pkt[offset];
 	flow.dst_port = pkt[offset + 1];
 
-	parse_result ret{};
-	ret->flow = flow;
-	ret->tcp_flags = 0;
-	ret->payload = pkt + offset + 8;
-	ret->payload_len = len - offset - 8;
+	ParsedPacket ret{};
+	ret.flow = flow;
+	ret.tcp_flags = 0;
+	ret.payload = pkt + offset + 8;
+	ret.payload_len = len - offset - 8;
 	return ret;
 }
 
@@ -260,9 +265,9 @@ parse_result PacketParser::parse_icmpv6_(
 	flow.src_port = type;
 	flow.dst_port = code;
 
-	parse_result ret{};
-	ret->flow = flow;
-	ret->tcp_flags = 0;
+	ParsedPacket ret{};
+	ret.flow = flow;
+	ret.tcp_flags = 0;
 
 	uint32_t header_len = 8;
 	switch (type)
@@ -278,8 +283,8 @@ parse_result PacketParser::parse_icmpv6_(
 	if (len < offset + header_len)
 		return std::unexpected(ParseError::Truncated);
 
-	ret->payload = pkt + offset + header_len;
-	ret->payload_len = len - offset - header_len;
+	ret.payload = pkt + offset + header_len;
+	ret.payload_len = len - offset - header_len;
 	return ret;
 }
 
