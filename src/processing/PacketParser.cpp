@@ -5,6 +5,7 @@
 #include <linux/ipv6.h>
 #include <linux/tcp.h>
 #include <linux/udp.h>
+#include <netinet/icmp6.h>
 #include <netinet/ip.h>
 
 namespace surma::processing
@@ -121,7 +122,9 @@ parse_result PacketParser::parse_ipv6_(
 			case IPPROTO_UDP:
 				ret = parse_udp_(pkt, len, ext_offset, remaining);
 				break;
-			case IPPROTO_ICMPV6: ret = parse_icmp_(pkt, len, ext_offset); break;
+			case IPPROTO_ICMPV6:
+				ret = parse_icmpv6_(pkt, len, ext_offset);
+				break;
 			case IPPROTO_HOPOPTS:
 			case IPPROTO_ROUTING:
 			case IPPROTO_DSTOPTS:
@@ -227,6 +230,7 @@ parse_result PacketParser::parse_icmp_(
 	if (len < offset + 8)
 		return std::unexpected(ParseError::Truncated);
 
+	// encode type and code into ports magic trick
 	FiveTuple flow{};
 	flow.src_port = pkt[offset];
 	flow.dst_port = pkt[offset + 1];
@@ -235,7 +239,47 @@ parse_result PacketParser::parse_icmp_(
 	ret->flow = flow;
 	ret->tcp_flags = 0;
 	ret->payload = pkt + offset + 8;
-	ret->payload_len = (len > offset + 8) ? len - offset - 8 : 0;
+	ret->payload_len = len - offset - 8;
+	return ret;
+}
+
+parse_result PacketParser::parse_icmpv6_(
+    const uint8_t *pkt,
+    uint32_t len,
+    uint32_t offset)
+{
+	// ICMPv6 header is minimum 8 bytes
+	if (len < offset + 8)
+		return std::unexpected(ParseError::Truncated);
+
+	uint8_t type = pkt[offset];
+	uint8_t code = pkt[offset + 1];
+
+	// encode type and code into ports magic trick
+	FiveTuple flow{};
+	flow.src_port = type;
+	flow.dst_port = code;
+
+	parse_result ret{};
+	ret->flow = flow;
+	ret->tcp_flags = 0;
+
+	uint32_t header_len = 8;
+	switch (type)
+	{
+		case ND_ROUTER_SOLICIT: header_len = 8; break;
+		case ND_ROUTER_ADVERT: header_len = 16; break;
+		case ND_NEIGHBOR_SOLICIT:
+		case ND_NEIGHBOR_ADVERT: header_len = 24; break;
+		case ND_REDIRECT: header_len = 40; break;
+		default: header_len = 8; break;
+	}
+
+	if (len < offset + header_len)
+		return std::unexpected(ParseError::Truncated);
+
+	ret->payload = pkt + offset + header_len;
+	ret->payload_len = len - offset - header_len;
 	return ret;
 }
 

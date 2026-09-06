@@ -71,6 +71,10 @@ class PacketParser
 	    const uint8_t *pkt,
 	    uint32_t len,
 	    uint32_t offset);
+	static parse_result parse_icmpv6_(
+	    const uint8_t *pkt,
+	    uint32_t len,
+	    uint32_t offset);
 };
 
 } // namespace surma::processing
