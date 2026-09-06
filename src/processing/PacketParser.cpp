@@ -175,6 +175,7 @@ parse_result PacketParser::parse_tcp_(
 	FiveTuple flow{};
 	flow.src_port = tcp->source;
 	flow.dst_port = tcp->dest;
+
 	parse_result ret{};
 	ret->flow = flow;
 	ret->tcp_flags = reinterpret_cast<const uint8_t *>(tcp)[13]; // flag trick
@@ -184,30 +185,58 @@ parse_result PacketParser::parse_tcp_(
 	return ret;
 }
 
-// TODO
 parse_result PacketParser::parse_udp_(
     const uint8_t *pkt,
     uint32_t len,
     uint32_t offset,
     uint32_t remaining)
 {
-	(void)pkt;
-	(void)len;
-	(void)offset;
-	(void)remaining;
-	return std::unexpected(ParseError::Unsupported);
+	if (len < offset + sizeof(struct udphdr))
+		return std::unexpected(ParseError::Truncated);
+	if (remaining < sizeof(struct udphdr))
+		return std::unexpected(ParseError::Truncated);
+
+	auto *udp = reinterpret_cast<const struct udphdr *>(pkt + offset);
+
+	uint16_t udp_len = ntohs(udp->len);
+	if (udp_len < sizeof(struct udphdr))
+		return std::unexpected(ParseError::Malformed);
+
+	// UDP length field includes the header
+	if (udp_len > remaining)
+		return std::unexpected(ParseError::Malformed);
+
+	FiveTuple flow{};
+	flow.src_port = udp->source;
+	flow.dst_port = udp->dest;
+
+	parse_result ret{};
+	ret->flow = flow;
+	ret->tcp_flags = 0;
+	ret->payload = pkt + offset + sizeof(struct udphdr);
+	ret->payload_len = udp_len - sizeof(struct udphdr);
+	return ret;
 }
 
-// TODO
 parse_result PacketParser::parse_icmp_(
     const uint8_t *pkt,
     uint32_t len,
     uint32_t offset)
 {
-	(void)pkt;
-	(void)len;
-	(void)offset;
-	return std::unexpected(ParseError::Unsupported);
+	// ICMPv4 header is 8 bytes
+	if (len < offset + 8)
+		return std::unexpected(ParseError::Truncated);
+
+	FiveTuple flow{};
+	flow.src_port = pkt[offset];
+	flow.dst_port = pkt[offset + 1];
+
+	parse_result ret{};
+	ret->flow = flow;
+	ret->tcp_flags = 0;
+	ret->payload = pkt + offset + 8;
+	ret->payload_len = (len > offset + 8) ? len - offset - 8 : 0;
+	return ret;
 }
 
 }; // namespace surma::processing
