@@ -34,7 +34,7 @@ parse_result PacketParser::parse(const uint8_t *pkt, uint32_t len)
 		offset += 4;
 	}
 
-	parse_result ret;
+	parse_result ret = std::unexpected(ParseError::Unsupported);
 	switch (proto)
 	{
 		case ETH_P_IP: ret = parse_ipv4_(pkt, len, offset); break;
@@ -75,7 +75,7 @@ parse_result PacketParser::parse_ipv4_(
 	uint32_t remaining = total_len - ihl;
 	offset += ihl;
 
-	parse_result ret;
+	parse_result ret = std::unexpected(ParseError::Unsupported);
 	switch (ip->protocol)
 	{
 		case IPPROTO_TCP: ret = parse_tcp_(pkt, len, offset, remaining); break;
@@ -96,16 +96,59 @@ parse_result PacketParser::parse_ipv4_(
 	return ret;
 }
 
-// TODO
 parse_result PacketParser::parse_ipv6_(
     const uint8_t *pkt,
     uint32_t len,
     uint32_t offset)
 {
-	(void)pkt;
-	(void)len;
-	(void)offset;
-	return std::unexpected(ParseError::Unsupported);
+	if (len < offset + sizeof(struct ipv6hdr))
+		return std::unexpected(ParseError::Truncated);
+
+	auto *ip6 = reinterpret_cast<const struct ipv6hdr *>(pkt + offset);
+
+	uint8_t next_header = ip6->nexthdr;
+	uint32_t ext_offset = offset + sizeof(struct ipv6hdr);
+	uint32_t remaining = ntohs(ip6->payload_len);
+
+	parse_result ret = std::unexpected(ParseError::Unsupported);
+	while (true)
+	{
+		switch (next_header)
+		{
+			case IPPROTO_TCP:
+				ret = parse_tcp_(pkt, len, ext_offset, remaining);
+				break;
+			case IPPROTO_UDP:
+				ret = parse_udp_(pkt, len, ext_offset, remaining);
+				break;
+			case IPPROTO_ICMPV6: ret = parse_icmp_(pkt, len, ext_offset); break;
+			case IPPROTO_HOPOPTS:
+			case IPPROTO_ROUTING:
+			case IPPROTO_DSTOPTS:
+			{
+				// extension header
+				if (len < ext_offset + 2)
+					return std::unexpected(ParseError::Truncated);
+				uint32_t ext_len = (pkt[ext_offset + 1] + 1) * 8;
+				if (remaining < ext_len)
+					return std::unexpected(ParseError::Malformed);
+				next_header = pkt[ext_offset];
+				ext_offset += ext_len;
+				remaining -= ext_len;
+				break;
+			}
+			default: return std::unexpected(ParseError::Unsupported);
+		}
+	}
+
+	if (ret.has_value())
+	{
+		std::memcpy(std::get<ipv6>(ret->flow.src_addr).data(), &ip6->saddr, 16);
+		std::memcpy(std::get<ipv6>(ret->flow.dst_addr).data(), &ip6->daddr, 16);
+		ret->ttl = ip6->hop_limit;
+		ret->ip_total_len = ntohs(ip6->payload_len) + sizeof(struct ipv6hdr);
+	}
+	return ret;
 }
 
 parse_result PacketParser::parse_tcp_(
