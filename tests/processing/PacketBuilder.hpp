@@ -97,15 +97,17 @@ class PacketBuilder
 	{
 		if (ip_offset_ > 0)
 		{
-			auto *ip =
-			    reinterpret_cast<struct iphdr *>(data_.data() + ip_offset_);
-			ip->tot_len = htons(data_.size() - ip_offset_);
+			uint16_t tot_len =
+			    htons(static_cast<uint16_t>(data_.size() - ip_offset_));
+			std::memcpy(
+			    data_.data() + ip_offset_ + 2, &tot_len, sizeof(tot_len));
 		}
 		if (udp_offset_ > 0)
 		{
-			auto *udp =
-			    reinterpret_cast<struct udphdr *>(data_.data() + udp_offset_);
-			udp->len = htons(data_.size() - udp_offset_);
+			uint16_t udp_len =
+			    htons(static_cast<uint16_t>(data_.size() - udp_offset_));
+			std::memcpy(
+			    data_.data() + udp_offset_ + 4, &udp_len, sizeof(udp_len));
 		}
 		return data_;
 	}

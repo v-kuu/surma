@@ -1,4 +1,6 @@
 #include "ProcessingThread.hpp"
+#include "PacketParser.hpp"
+#include <arpa/inet.h>
 #include <spdlog/spdlog.h>
 
 namespace surma::processing
@@ -65,9 +67,19 @@ void ProcessingThread::run_()
 
 void ProcessingThread::process_packet_(uint8_t *pkt, uint32_t len)
 {
-	// TODO: hand to packet parser
-	(void)pkt;
-	spdlog::debug("processing packet len={}", len);
+	auto result = PacketParser::parse(pkt, len);
+	if (!result.has_value())
+	{
+		spdlog::warn(
+		    "packet parse failed: {}", static_cast<int>(result.error()));
+		return;
+	}
+
+	spdlog::debug(
+	    "parsed packet proto={} src_port={} dst_port={}",
+	    result->flow.proto,
+	    ntohs(result->flow.src_port),
+	    ntohs(result->flow.dst_port));
 }
 
 } // namespace surma::processing
