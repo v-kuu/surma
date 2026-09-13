@@ -56,29 +56,30 @@ parse_result PacketParser::parse_ipv4_(
 	if (len < offset + sizeof(struct iphdr))
 		return std::unexpected(ParseError::Truncated);
 
-	auto *ip = reinterpret_cast<const struct iphdr *>(pkt + offset);
+	struct iphdr ip;
+	memcpy(&ip, pkt + offset, sizeof(ip));
 
 	// IP header length (ihl) is in 32bit words
-	uint32_t ihl = ip->ihl * 4;
+	uint32_t ihl = ip.ihl * 4;
 	if (ihl < sizeof(struct iphdr))
 		return std::unexpected(ParseError::Malformed);
 
 	if (len < offset + ihl)
 		return std::unexpected(ParseError::Truncated);
 
-	uint16_t total_len = ntohs(ip->tot_len);
+	uint16_t total_len = ntohs(ip.tot_len);
 	if (total_len < ihl)
 		return std::unexpected(ParseError::Malformed);
 
 	// fragmented packet reassembly out of scope
-	if (ntohs(ip->frag_off) & (IP_MF | IP_OFFMASK))
+	if (ntohs(ip.frag_off) & (IP_MF | IP_OFFMASK))
 		return std::unexpected(ParseError::Unsupported);
 
 	uint32_t remaining = total_len - ihl;
 	offset += ihl;
 
 	parse_result ret = std::unexpected(ParseError::Unsupported);
-	switch (ip->protocol)
+	switch (ip.protocol)
 	{
 		case IPPROTO_TCP: ret = parse_tcp_(pkt, len, offset, remaining); break;
 		case IPPROTO_UDP: ret = parse_udp_(pkt, len, offset, remaining); break;
@@ -88,10 +89,10 @@ parse_result PacketParser::parse_ipv4_(
 
 	if (ret.has_value())
 	{
-		ret->flow.src_addr = ip->saddr;
-		ret->flow.dst_addr = ip->daddr;
-		ret->flow.proto = ip->protocol;
-		ret->ttl = ip->ttl;
+		ret->flow.src_addr = ip.saddr;
+		ret->flow.dst_addr = ip.daddr;
+		ret->flow.proto = ip.protocol;
+		ret->ttl = ip.ttl;
 		ret->ip_total_len = total_len;
 	}
 
@@ -106,11 +107,12 @@ parse_result PacketParser::parse_ipv6_(
 	if (len < offset + sizeof(struct ipv6hdr))
 		return std::unexpected(ParseError::Truncated);
 
-	auto *ip6 = reinterpret_cast<const struct ipv6hdr *>(pkt + offset);
+	struct ipv6hdr ip6;
+	memcpy(&ip6, pkt + offset, sizeof(ip6));
 
-	uint8_t next_header = ip6->nexthdr;
+	uint8_t next_header = ip6.nexthdr;
 	uint32_t ext_offset = offset + sizeof(struct ipv6hdr);
-	uint32_t remaining = ntohs(ip6->payload_len);
+	uint32_t remaining = ntohs(ip6.payload_len);
 
 	parse_result ret = std::unexpected(ParseError::Unsupported);
 
@@ -152,10 +154,10 @@ parse_result PacketParser::parse_ipv6_(
 
 	if (ret.has_value())
 	{
-		std::memcpy(std::get<ipv6>(ret->flow.src_addr).data(), &ip6->saddr, 16);
-		std::memcpy(std::get<ipv6>(ret->flow.dst_addr).data(), &ip6->daddr, 16);
-		ret->ttl = ip6->hop_limit;
-		ret->ip_total_len = ntohs(ip6->payload_len) + sizeof(struct ipv6hdr);
+		std::memcpy(std::get<ipv6>(ret->flow.src_addr).data(), &ip6.saddr, 16);
+		std::memcpy(std::get<ipv6>(ret->flow.dst_addr).data(), &ip6.daddr, 16);
+		ret->ttl = ip6.hop_limit;
+		ret->ip_total_len = ntohs(ip6.payload_len) + sizeof(struct ipv6hdr);
 	}
 	return ret;
 }
@@ -171,10 +173,11 @@ parse_result PacketParser::parse_tcp_(
 	if (remaining < sizeof(struct tcphdr))
 		return std::unexpected(ParseError::Truncated);
 
-	auto *tcp = reinterpret_cast<const struct tcphdr *>(pkt + offset);
+	struct tcphdr tcp;
+	memcpy(&tcp, pkt + offset, sizeof(tcp));
 
 	// tcp data offset is in bits
-	uint32_t doff = tcp->doff * 4;
+	uint32_t doff = tcp.doff * 4;
 	if (doff < sizeof(struct tcphdr))
 		return std::unexpected(ParseError::Malformed);
 
@@ -182,12 +185,13 @@ parse_result PacketParser::parse_tcp_(
 		return std::unexpected(ParseError::Truncated);
 
 	FiveTuple flow{};
-	flow.src_port = tcp->source;
-	flow.dst_port = tcp->dest;
+	flow.src_port = tcp.source;
+	flow.dst_port = tcp.dest;
 
 	ParsedPacket ret{};
 	ret.flow = flow;
-	ret.tcp_flags = reinterpret_cast<const uint8_t *>(tcp)[13]; // flag trick
+	memcpy(
+	    &ret.tcp_flags, pkt + offset + 13, sizeof(ret.tcp_flags)); // flag trick
 	ret.payload = pkt + offset + doff;
 	ret.payload_len = static_cast<uint16_t>(remaining - doff);
 
@@ -205,9 +209,10 @@ parse_result PacketParser::parse_udp_(
 	if (remaining < sizeof(struct udphdr))
 		return std::unexpected(ParseError::Truncated);
 
-	auto *udp = reinterpret_cast<const struct udphdr *>(pkt + offset);
+	struct udphdr udp;
+	memcpy(&udp, pkt + offset, sizeof(udp));
 
-	uint16_t udp_len = ntohs(udp->len);
+	uint16_t udp_len = ntohs(udp.len);
 	if (udp_len < sizeof(struct udphdr))
 		return std::unexpected(ParseError::Malformed);
 
@@ -216,8 +221,8 @@ parse_result PacketParser::parse_udp_(
 		return std::unexpected(ParseError::Malformed);
 
 	FiveTuple flow{};
-	flow.src_port = udp->source;
-	flow.dst_port = udp->dest;
+	flow.src_port = udp.source;
+	flow.dst_port = udp.dest;
 
 	ParsedPacket ret{};
 	ret.flow = flow;
