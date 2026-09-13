@@ -32,6 +32,7 @@ parse_result PacketParser::parse(const uint8_t *pkt, uint32_t len)
 		uint16_t vlan_proto;
 		std::memcpy(&vlan_proto, pkt + ETH_HLEN + 2, sizeof(vlan_proto));
 		proto = ntohs(vlan_proto);
+		eth_proto = proto;
 		offset += 4;
 	}
 
