@@ -6,6 +6,15 @@ set(CMAKE_CXX_STANDARD 23)
 set(CMAKE_CXX_STANDARD_REQUIRED ON)
 set(CMAKE_EXPORT_COMPILE_COMMANDS ON)
 
+# highwayhash not available for conan. it is also frozen so no need for specific tag
+include(FetchContent)
+FetchContent_Declare(
+	highwayhash
+	GIT_REPOSITORY https://github.com/google/highwayhash.git
+	GIT_TAG 5ad3bf8444cfc663b11bf367baaa31f36e7ff7c8
+)
+FetchContent_MakeAvailable(highwayhash)
+
 include(CheckLanguage)
 check_language(CUDA)
 if(CMAKE_CUDA_COMPILER)
@@ -37,6 +46,7 @@ target_include_directories(surma_lib PUBLIC src/)
 
 target_link_libraries(surma_lib PRIVATE
 	spdlog::spdlog
+	highwayhash::highwayhash
 	${XDP_LIBRARIES}
 	${BPF_LIBRARIES}
 )
