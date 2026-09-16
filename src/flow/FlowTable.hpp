@@ -2,6 +2,9 @@
 #include <array>
 #include <chrono>
 #include <cstdint>
+#include <expected>
+#include <highwayhash/highwayhash.h>
+#include <highwayhash/instruction_sets.h>
 
 namespace surma::flow
 {
@@ -45,6 +48,16 @@ struct FlowKey
 	std::array<std::byte, 3> pad_;
 };
 
+using namespace highwayhash;
+HHResult64 hash_key(const FlowKey &key, HH_ALIGNAS(32) const HHKey seed)
+{
+	HHResult64 result;
+	HHStateT<HH_TARGET> state(seed);
+	HighwayHashT(
+	    &state, reinterpret_cast<const char *>(&key), sizeof(key), &result);
+	return result;
+}
+
 struct TcpPeer
 {
 	uint32_t seqno;
@@ -83,6 +96,48 @@ enum class FlowAction
 {
 	Pass,
 	Drop,
+};
+
+enum class FlowError
+{
+	Error,
+};
+
+#define FLOW_TABLE_DEFAULT_SIZE (1 << 22) // 4M slots
+#define FLOW_TABLE_MAX_LOAD 75            // percent
+
+class FlowTable
+{
+  public:
+	FlowTable() = delete;
+	~FlowTable() = default;
+	FlowTable(const FlowTable &) = delete;
+	FlowTable &operator=(const FlowTable &) = delete;
+	FlowTable(FlowTable &&) = delete;
+	FlowTable &operator=(FlowTable &&) = delete;
+
+	std::expected<FlowTable, FlowError> init();
+
+  private:
+	struct FlowEntry *slots_;
+	uint32_t capacity_;
+	uint32_t mask_;
+	uint32_t count;
+	uint32_t limit_;
+
+	uint64_t key0_;
+	uint64_t key1_;
+
+	// pthread_t reaper_thread
+	volatile int reaper_running_;
+	uint32_t reaper_interval_sec;
+
+	uint64_t lookups_;
+	uint64_t hits_;
+	uint64_t misses;
+	uint64_t insertions;
+	uint64_t evictions;
+	uint64_t collisions;
 };
 
 } // namespace surma::flow

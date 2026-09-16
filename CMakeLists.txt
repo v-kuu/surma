@@ -51,7 +51,7 @@ target_link_libraries(surma_lib PRIVATE
 	${BPF_LIBRARIES}
 )
 target_compile_options(surma_lib PRIVATE
-	$<$<COMPILE_LANGUAGE:CXX>:-Wall -Wextra -Werror>
+	$<$<COMPILE_LANGUAGE:CXX>:-Wall -Wextra -Werror -march=native>
 	$<$<COMPILE_LANGUAGE:CUDA>:-Xcompiler=-Wall,-Wextra,-Werror>
 )
 

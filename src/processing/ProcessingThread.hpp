@@ -34,11 +34,9 @@ class ProcessingThread
 	void start();
 	void stop();
 
-  protected:
-	void process_packet_(uint8_t *pkt, uint32_t len);
-
   private:
 	void run_();
+	void process_packet_(uint8_t *pkt, uint32_t len);
 
 	surma::capture::Umem &umem_;
 	RxQueue &rx_queue_;
