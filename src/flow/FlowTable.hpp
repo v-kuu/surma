@@ -85,11 +85,10 @@ struct FlowEntry
 	uint64_t bytes;
 
 	uint8_t action;
-	uint8_t occupied;
+	bool occupied;
 
 	std::array<std::byte, 6> pad_;
 };
-
 static_assert(sizeof(FlowEntry) == 96);
 
 enum class FlowAction
@@ -128,16 +127,14 @@ class FlowTable
 	uint64_t key0_;
 	uint64_t key1_;
 
-	// pthread_t reaper_thread
-	volatile int reaper_running_;
-	uint32_t reaper_interval_sec;
-
 	uint64_t lookups_;
 	uint64_t hits_;
 	uint64_t misses;
 	uint64_t insertions;
 	uint64_t evictions;
 	uint64_t collisions;
+
+	friend class ReaperThread;
 };
 
 } // namespace surma::flow
