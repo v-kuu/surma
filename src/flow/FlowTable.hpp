@@ -1,4 +1,5 @@
 #pragma once
+#include "FlowEntry.hpp"
 #include <chrono>
 #include <cstdint>
 #include <expected>
@@ -10,12 +11,6 @@ namespace timeout
 {
 using namespace std::chrono_literals;
 
-constexpr auto tcp_established = 24h;
-constexpr auto tcp_syn_sent = 2min;
-constexpr auto tcp_syn_rcvd = 1min;
-constexpr auto tcp_fin_wait = 2min;
-constexpr auto tcp_time_wait = 90s;
-constexpr auto tcp_closed = 90s;
 constexpr auto udp = 1min;
 constexpr auto icmp = 20s;
 constexpr auto other = 1min;

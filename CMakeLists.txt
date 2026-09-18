@@ -40,6 +40,9 @@ add_library(surma_lib STATIC
 	src/capture/RxLoop.cpp
 	src/processing/ProcessingThread.cpp
 	src/processing/PacketParser.cpp
+	src/flow/ReaperThread.cpp
+	src/flow/FlowKey.cpp
+	src/flow/FlowEntry.cpp
 )
 target_include_directories(surma_lib PRIVATE ${XDP_INCLUDE_DIRS})
 target_include_directories(surma_lib PUBLIC src/)
