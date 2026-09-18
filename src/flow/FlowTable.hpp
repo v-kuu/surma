@@ -1,10 +1,9 @@
 #pragma once
+#include "FlowKey.hpp"
 #include <array>
 #include <chrono>
 #include <cstdint>
 #include <expected>
-#include <highwayhash/highwayhash.h>
-#include <highwayhash/instruction_sets.h>
 
 namespace surma::flow
 {
@@ -38,26 +37,6 @@ enum class TcpState
 	LastAck,
 };
 
-struct FlowKey
-{
-	uint32_t src_addr;
-	uint32_t dst_addr;
-	uint16_t src_port;
-	uint16_t dst_port;
-	uint8_t proto;
-	std::array<std::byte, 3> pad_;
-};
-
-using namespace highwayhash;
-HHResult64 hash_key(const FlowKey &key, HH_ALIGNAS(32) const HHKey seed)
-{
-	HHResult64 result;
-	HHStateT<HH_TARGET> state(seed);
-	HighwayHashT(
-	    &state, reinterpret_cast<const char *>(&key), sizeof(key), &result);
-	return result;
-}
-
 struct TcpPeer
 {
 	uint32_t seqno;
@@ -68,7 +47,6 @@ struct TcpPeer
 };
 
 using std::chrono::steady_clock;
-
 struct FlowEntry
 {
 	struct FlowKey key;
