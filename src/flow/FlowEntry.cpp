@@ -1,4 +1,5 @@
 #include "FlowEntry.hpp"
+#include <netinet/ip.h>
 
 namespace surma::flow
 {
@@ -98,6 +99,26 @@ void FlowEntry::update_tcp_state(uint8_t flags, bool is_initiator)
 				timeout = timeout::tcp_closed;
 			}
 			break;
+	}
+}
+
+std::chrono::seconds FlowEntry::select_timeout() const
+{
+	switch (key.proto)
+	{
+		case IPPROTO_TCP:
+			switch (src.state)
+			{
+				case TcpState::Established: return timeout::tcp_established;
+				case TcpState::SynSent: return timeout::tcp_syn_sent;
+				case TcpState::SynRcvd: return timeout::tcp_syn_rcvd;
+				case TcpState::TimeWait: return timeout::tcp_time_wait;
+				case TcpState::Closed: return timeout::tcp_closed;
+				default: return timeout::tcp_fin_wait;
+			}
+		case IPPROTO_UDP: return timeout::udp;
+		case IPPROTO_ICMP: return timeout::icmp;
+		default: return timeout::other;
 	}
 }
 

@@ -12,6 +12,9 @@ namespace timeout
 {
 using namespace std::chrono_literals;
 
+constexpr auto udp = 1min;
+constexpr auto icmp = 20s;
+constexpr auto other = 1min;
 constexpr auto tcp_established = 24h;
 constexpr auto tcp_syn_sent = 2min;
 constexpr auto tcp_syn_rcvd = 1min;
@@ -66,6 +69,7 @@ struct FlowEntry
 	std::array<std::byte, 6> pad_;
 
 	void update_tcp_state(uint8_t flags, bool is_initiator);
+	std::chrono::seconds select_timeout() const;
 };
 static_assert(sizeof(FlowEntry) == 96);
 

@@ -7,15 +7,6 @@
 namespace surma::flow
 {
 
-namespace timeout
-{
-using namespace std::chrono_literals;
-
-constexpr auto udp = 1min;
-constexpr auto icmp = 20s;
-constexpr auto other = 1min;
-} // namespace timeout
-
 enum class FlowAction
 {
 	Pass,
@@ -54,10 +45,10 @@ class FlowTable
 
 	uint64_t lookups_;
 	uint64_t hits_;
-	uint64_t misses;
-	uint64_t insertions;
-	uint64_t evictions;
-	uint64_t collisions;
+	uint64_t misses_;
+	uint64_t insertions_;
+	uint64_t evictions_;
+	uint64_t collisions_;
 
 	friend class ReaperThread;
 };
