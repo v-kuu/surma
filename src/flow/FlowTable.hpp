@@ -2,7 +2,10 @@
 #include "FlowEntry.hpp"
 #include <chrono>
 #include <cstdint>
+#include <cstring>
 #include <expected>
+#include <highwayhash/highwayhash.h>
+#include <utility>
 
 namespace surma::flow
 {
@@ -15,6 +18,7 @@ enum class FlowAction
 
 enum class FlowError
 {
+	CapacityNotP2,
 	Error,
 };
 
@@ -28,20 +32,34 @@ class FlowTable
 	~FlowTable() = default;
 	FlowTable(const FlowTable &) = delete;
 	FlowTable &operator=(const FlowTable &) = delete;
-	FlowTable(FlowTable &&) = delete;
+	FlowTable(FlowTable &&other) noexcept
+	    : slots_(std::exchange(other.slots_, nullptr)),
+	      capacity_(other.capacity_),
+	      mask_(other.mask_),
+	      count_(other.count_),
+	      limit_(other.limit_),
+	      lookups_(other.lookups_),
+	      hits_(other.hits_),
+	      misses_(other.misses_),
+	      insertions_(other.insertions_),
+	      evictions_(other.evictions_),
+	      collisions_(other.collisions_)
+	{
+		std::memcpy(seed_, other.seed_, sizeof(seed_));
+		std::memset(other.seed_, 0, sizeof(other.seed_));
+	}
 	FlowTable &operator=(FlowTable &&) = delete;
 
-	std::expected<FlowTable, FlowError> init();
+	std::expected<FlowTable, FlowError> init(uint32_t capacity, uint32_t limit);
 
   private:
 	struct FlowEntry *slots_;
 	uint32_t capacity_;
 	uint32_t mask_;
-	uint32_t count;
+	uint32_t count_;
 	uint32_t limit_;
 
-	uint64_t key0_;
-	uint64_t key1_;
+	HH_ALIGNAS(32) highwayhash::HHKey seed_;
 
 	uint64_t lookups_;
 	uint64_t hits_;
@@ -50,6 +68,10 @@ class FlowTable
 	uint64_t evictions_;
 	uint64_t collisions_;
 
+	explicit FlowTable(uint32_t capacity, uint32_t limit)
+	    : capacity_(capacity),
+	      limit_(limit)
+	{}
 	friend class ReaperThread;
 };
 

@@ -30,7 +30,7 @@ class ReaperThread
 	FlowTable &ft_;
 	std::atomic<bool> running_;
 	std::thread thread_;
-	std::chrono::seconds interval_;
+	std::chrono::seconds interval_{ 10 };
 
 	void run_();
 };

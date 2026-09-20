@@ -17,7 +17,6 @@ struct FlowKey
 	uint8_t proto;
 	std::array<std::byte, 3> pad_;
 
-	// TODO: HH_ALIGNAS(32) the seed at caller site
 	HHResult64 hash(const HHKey &seed);
 };
 
