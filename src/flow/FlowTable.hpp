@@ -5,6 +5,8 @@
 #include <cstring>
 #include <expected>
 #include <highwayhash/highwayhash.h>
+#include <memory>
+#include <sys/mman.h>
 #include <utility>
 
 namespace surma::flow
@@ -19,8 +21,16 @@ enum class FlowAction
 enum class FlowError
 {
 	CapacityNotP2,
-	Error,
+	MmapFailed,
 };
+
+struct MmapDeleter
+{
+	size_t size;
+	void operator()(FlowEntry *ptr) const { munmap(ptr, size); }
+};
+
+using SlotArray = std::unique_ptr<FlowEntry[], MmapDeleter>;
 
 #define FLOW_TABLE_DEFAULT_SIZE (1 << 22) // 4M slots
 #define FLOW_TABLE_MAX_LOAD 75            // percent
@@ -53,7 +63,7 @@ class FlowTable
 	std::expected<FlowTable, FlowError> init(uint32_t capacity, uint32_t limit);
 
   private:
-	struct FlowEntry *slots_;
+	SlotArray slots_;
 	uint32_t capacity_;
 	uint32_t mask_;
 	uint32_t count_;

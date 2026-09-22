@@ -43,6 +43,7 @@ add_library(surma_lib STATIC
 	src/flow/ReaperThread.cpp
 	src/flow/FlowKey.cpp
 	src/flow/FlowEntry.cpp
+	src/flow/FlowTable.cpp
 )
 target_include_directories(surma_lib PRIVATE ${XDP_INCLUDE_DIRS})
 target_include_directories(surma_lib PUBLIC src/)
