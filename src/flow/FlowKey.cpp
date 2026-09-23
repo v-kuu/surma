@@ -1,5 +1,4 @@
 #include "FlowKey.hpp"
-#include <cstring>
 #include <highwayhash/highwayhash_target.h>
 #include <highwayhash/instruction_sets.h>
 

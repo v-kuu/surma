@@ -14,6 +14,10 @@ FetchContent_Declare(
 	GIT_TAG 5ad3bf8444cfc663b11bf367baaa31f36e7ff7c8
 )
 FetchContent_MakeAvailable(highwayhash)
+target_sources(highwayhash PRIVATE
+    ${highwayhash_SOURCE_DIR}/highwayhash/instruction_sets.cc
+    ${highwayhash_SOURCE_DIR}/highwayhash/os_specific.cc
+)
 
 include(CheckLanguage)
 check_language(CUDA)
@@ -48,11 +52,14 @@ add_library(surma_lib STATIC
 target_include_directories(surma_lib PRIVATE ${XDP_INCLUDE_DIRS})
 target_include_directories(surma_lib PUBLIC src/)
 
-target_link_libraries(surma_lib PRIVATE
-	spdlog::spdlog
-	highwayhash::highwayhash
-	${XDP_LIBRARIES}
-	${BPF_LIBRARIES}
+
+target_link_libraries(surma_lib
+	PUBLIC
+		highwayhash::highwayhash
+	PRIVATE
+		spdlog::spdlog
+		${XDP_LIBRARIES}
+		${BPF_LIBRARIES}
 )
 target_compile_options(surma_lib PRIVATE
 	$<$<COMPILE_LANGUAGE:CXX>:-Wall -Wextra -Werror -march=native>
