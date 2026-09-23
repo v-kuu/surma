@@ -5,6 +5,8 @@
 namespace surma::flow
 {
 
+using namespace highwayhash;
+
 std::expected<FlowTable, FlowError> FlowTable::init(
     uint32_t capacity,
     uint32_t limit)
@@ -40,9 +42,8 @@ struct FlowEntry *FlowTable::lookup(const struct FlowKey *raw)
 {
 	lookups_++;
 
-	struct FlowKey normalized;
 	bool is_initiator;
-	FlowKey::normalize(normalized, *raw, is_initiator);
+	struct FlowKey normalized = FlowKey::normalized(*raw, is_initiator);
 
 	HHResult64 hash = normalized.hash(seed_);
 	auto index = static_cast<uint32_t>(hash & mask_);
@@ -73,14 +74,15 @@ struct FlowEntry *FlowTable::lookup(const struct FlowKey *raw)
 }
 
 using std::chrono::steady_clock;
-struct FlowEntry *FlowTable::insert(const struct FlowKey *raw, uint8_t action)
+struct FlowEntry *FlowTable::insert(
+    const struct FlowKey *raw,
+    FlowAction action)
 {
 	if (count_ >= limit_)
 		return nullptr;
 
-	struct FlowKey normalized;
 	bool is_initiator;
-	FlowKey::normalize(normalized, *raw, is_initiator);
+	struct FlowKey normalized = FlowKey::normalized(*raw, is_initiator);
 
 	HHResult64 hash = normalized.hash(seed_);
 	auto index = static_cast<uint32_t>(hash & mask_);
@@ -153,9 +155,8 @@ void FlowTable::update(
     uint8_t tcp_flags,
     uint32_t pkt_len)
 {
-	struct FlowKey normalized;
 	bool is_initiator;
-	FlowKey::normalize(normalized, *raw, is_initiator);
+	FlowKey::normalized(*raw, is_initiator);
 
 	e.last_seen = steady_clock::now();
 	e.packets++;
@@ -180,6 +181,8 @@ FlowVerdict FlowTable::process(
 		return e->action == FlowAction::Pass ? FlowVerdict::Pass
 		                                     : FlowVerdict::Drop;
 	}
+
+	return FlowVerdict::NewFlow;
 }
 
 } // namespace surma::flow

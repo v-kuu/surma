@@ -6,8 +6,6 @@
 namespace surma::flow
 {
 
-using namespace highwayhash;
-
 struct FlowKey
 {
 	uint32_t src_addr;
@@ -17,11 +15,8 @@ struct FlowKey
 	uint8_t proto;
 	std::array<std::byte, 3> pad_;
 
-	HHResult64 hash(const HHKey &seed);
-	static void normalize(
-	    struct FlowKey &key,
-	    const struct FlowKey &raw,
-	    bool &is_initiator);
+	highwayhash::HHResult64 hash(const highwayhash::HHKey &seed) const;
+	static FlowKey normalized(const FlowKey &raw, bool &is_initiator);
 };
 
 } // namespace surma::flow

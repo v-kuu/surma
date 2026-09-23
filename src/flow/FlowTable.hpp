@@ -61,7 +61,7 @@ class FlowTable
 
 	std::expected<FlowTable, FlowError> init(uint32_t capacity, uint32_t limit);
 	struct FlowEntry *lookup(const struct FlowKey *raw);
-	struct FlowEntry *insert(const struct FlowKey *raw, uint8_t action);
+	struct FlowEntry *insert(const struct FlowKey *raw, FlowAction action);
 	void remove(uint32_t slot);
 	void update(
 	    struct FlowEntry &e,

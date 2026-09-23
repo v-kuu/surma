@@ -58,7 +58,7 @@ using std::chrono::steady_clock;
 struct FlowEntry
 {
 	struct FlowKey key;
-	HHResult64 hash;
+	highwayhash::HHResult64 hash;
 
 	struct TcpPeer src;
 	struct TcpPeer dst;
