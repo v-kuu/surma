@@ -18,6 +18,10 @@ struct FlowKey
 	std::array<std::byte, 3> pad_;
 
 	HHResult64 hash(const HHKey &seed);
+	static void normalize(
+	    struct FlowKey &key,
+	    const struct FlowKey &raw,
+	    bool &is_initiator);
 };
 
 } // namespace surma::flow

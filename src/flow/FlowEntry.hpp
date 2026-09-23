@@ -4,6 +4,7 @@
 #include <array>
 #include <chrono>
 #include <cstdint>
+#include <highwayhash/highwayhash.h>
 
 namespace surma::flow
 {
@@ -37,6 +38,12 @@ enum class TcpState : uint8_t
 	LastAck,
 };
 
+enum class FlowAction : uint8_t
+{
+	Pass,
+	Drop,
+};
+
 struct TcpPeer
 {
 	uint32_t seqno;
@@ -51,7 +58,7 @@ using std::chrono::steady_clock;
 struct FlowEntry
 {
 	struct FlowKey key;
-	uint64_t hash;
+	HHResult64 hash;
 
 	struct TcpPeer src;
 	struct TcpPeer dst;
@@ -63,7 +70,7 @@ struct FlowEntry
 	uint64_t packets;
 	uint64_t bytes;
 
-	uint8_t action;
+	FlowAction action;
 	bool occupied;
 
 	std::array<std::byte, 6> pad_;

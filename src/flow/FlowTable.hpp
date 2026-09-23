@@ -12,16 +12,17 @@
 namespace surma::flow
 {
 
-enum class FlowAction
-{
-	Pass,
-	Drop,
-};
-
 enum class FlowError
 {
 	CapacityNotP2,
 	MmapFailed,
+};
+
+enum class FlowVerdict
+{
+	Pass,
+	Drop,
+	NewFlow,
 };
 
 struct MmapDeleter
@@ -30,10 +31,8 @@ struct MmapDeleter
 	void operator()(FlowEntry *ptr) const { munmap(ptr, size); }
 };
 
-using SlotArray = std::unique_ptr<FlowEntry[], MmapDeleter>;
-
-#define FLOW_TABLE_DEFAULT_SIZE (1 << 22) // 4M slots
-#define FLOW_TABLE_MAX_LOAD 75            // percent
+constexpr uint32_t FLOW_TABLE_DEFAULT_SIZE = (1 << 22); // 4M slots
+constexpr uint32_t FLOW_TABLE_MAX_LOAD = 75;            // percent
 
 class FlowTable
 {
@@ -61,8 +60,21 @@ class FlowTable
 	FlowTable &operator=(FlowTable &&) = delete;
 
 	std::expected<FlowTable, FlowError> init(uint32_t capacity, uint32_t limit);
+	struct FlowEntry *lookup(const struct FlowKey *raw);
+	struct FlowEntry *insert(const struct FlowKey *raw, uint8_t action);
+	void remove(uint32_t slot);
+	void update(
+	    struct FlowEntry &e,
+	    const struct FlowKey *raw,
+	    uint8_t tcp_flags,
+	    uint32_t pkt_len);
+	FlowVerdict process(
+	    const struct FlowKey *key,
+	    uint8_t tcp_flags,
+	    uint32_t pkt_len);
 
   private:
+	using SlotArray = std::unique_ptr<FlowEntry[], MmapDeleter>;
 	SlotArray slots_;
 	uint32_t capacity_;
 	uint32_t mask_;
