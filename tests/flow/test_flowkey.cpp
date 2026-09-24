@@ -7,6 +7,7 @@ using namespace surma::flow;
 namespace
 {
 
+// RFC 5737 documentation range, never routable
 constexpr uint32_t ADDR_A = 0xc0000201; // 192.0.2.1
 constexpr uint32_t ADDR_B = 0xc0000202; // 192.0.2.2
 constexpr uint32_t ADDR_SAME = 0xc0000201;

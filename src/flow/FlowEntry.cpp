@@ -11,14 +11,14 @@ constexpr uint8_t TH_RST = 0x04;
 
 void FlowEntry::update_tcp_state(uint8_t flags, bool is_initiator)
 {
-	struct TcpPeer *source = is_initiator ? &src : &dst;
-	struct TcpPeer *dest = is_initiator ? &dst : &src;
+	TcpPeer *source = is_initiator ? &src : &dst;
+	TcpPeer *dest = is_initiator ? &dst : &src;
 
 	if (flags & TH_RST)
 	{
 		source->state = TcpState::Closed;
 		dest->state = TcpState::Closed;
-		timeout = timeout::tcp_closed;
+		expiry = timeout::tcp_closed;
 		return;
 	}
 
@@ -29,12 +29,12 @@ void FlowEntry::update_tcp_state(uint8_t flags, bool is_initiator)
 			if ((flags & (TH_SYN | TH_ACK)) == TH_SYN)
 			{
 				source->state = TcpState::SynSent;
-				timeout = timeout::tcp_syn_sent;
+				expiry = timeout::tcp_syn_sent;
 			}
 			else if ((flags & (TH_SYN | TH_ACK)) == (TH_SYN | TH_ACK))
 			{
 				source->state = TcpState::SynRcvd;
-				timeout = timeout::tcp_syn_rcvd;
+				expiry = timeout::tcp_syn_rcvd;
 			}
 			break;
 
@@ -43,7 +43,7 @@ void FlowEntry::update_tcp_state(uint8_t flags, bool is_initiator)
 			{
 				source->state = TcpState::Established;
 				dest->state = TcpState::Established;
-				timeout = timeout::tcp_established;
+				expiry = timeout::tcp_established;
 			}
 			break;
 
@@ -51,17 +51,24 @@ void FlowEntry::update_tcp_state(uint8_t flags, bool is_initiator)
 			if (flags & TH_FIN)
 			{
 				source->state = TcpState::FinWait1;
-				timeout = timeout::tcp_fin_wait;
+				expiry = timeout::tcp_fin_wait;
 			}
 			break;
 
 		case TcpState::FinWait1:
-			if (flags & TH_ACK)
+			if ((flags & (TH_FIN | TH_ACK)) == (TH_FIN | TH_ACK))
+			{
+				source->state = TcpState::Closing;
+				expiry = timeout::tcp_fin_wait;
+			}
+			else if (flags & TH_ACK)
+			{
 				source->state = TcpState::FinWait2;
-			if (flags & TH_FIN)
+			}
+			else if (flags & TH_FIN)
 			{
 				source->state = TcpState::TimeWait;
-				timeout = timeout::tcp_time_wait;
+				expiry = timeout::tcp_time_wait;
 			}
 			break;
 
@@ -69,7 +76,7 @@ void FlowEntry::update_tcp_state(uint8_t flags, bool is_initiator)
 			if (flags & TH_FIN)
 			{
 				source->state = TcpState::TimeWait;
-				timeout = timeout::tcp_time_wait;
+				expiry = timeout::tcp_time_wait;
 			}
 			break;
 
@@ -77,7 +84,7 @@ void FlowEntry::update_tcp_state(uint8_t flags, bool is_initiator)
 			if (flags & TH_ACK)
 			{
 				source->state = TcpState::TimeWait;
-				timeout = timeout::tcp_time_wait;
+				expiry = timeout::tcp_time_wait;
 			}
 			break;
 
@@ -87,7 +94,7 @@ void FlowEntry::update_tcp_state(uint8_t flags, bool is_initiator)
 			if (flags & TH_FIN)
 			{
 				source->state = TcpState::LastAck;
-				timeout = timeout::tcp_fin_wait;
+				expiry = timeout::tcp_fin_wait;
 			}
 			break;
 
@@ -96,7 +103,7 @@ void FlowEntry::update_tcp_state(uint8_t flags, bool is_initiator)
 			{
 				source->state = TcpState::Closed;
 				dest->state = TcpState::Closed;
-				timeout = timeout::tcp_closed;
+				expiry = timeout::tcp_closed;
 			}
 			break;
 	}

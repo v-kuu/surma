@@ -60,16 +60,16 @@ class FlowTable
 	FlowTable &operator=(FlowTable &&) = delete;
 
 	std::expected<FlowTable, FlowError> init(uint32_t capacity, uint32_t limit);
-	struct FlowEntry *lookup(const struct FlowKey *raw);
-	struct FlowEntry *insert(const struct FlowKey *raw, FlowAction action);
+	FlowEntry *lookup(const FlowKey *raw);
+	FlowEntry *insert(const FlowKey *raw, FlowAction action);
 	void remove(uint32_t slot);
 	void update(
 	    struct FlowEntry &e,
-	    const struct FlowKey *raw,
+	    const FlowKey *raw,
 	    uint8_t tcp_flags,
 	    uint32_t pkt_len);
 	FlowVerdict process(
-	    const struct FlowKey *key,
+	    const FlowKey *key,
 	    uint8_t tcp_flags,
 	    uint32_t pkt_len);
 

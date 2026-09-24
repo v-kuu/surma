@@ -31,10 +31,10 @@ void ReaperThread::run_()
 		for (uint32_t i = 0; i < ft_.capacity_; i++)
 		{
 			auto *e = &ft_.slots_[i];
-			if (!e->occupied)
+			if (e->state != SlotState::Occupied)
 				continue;
 
-			if (now - e->last_seen > e->timeout)
+			if (now - e->last_seen > e->expiry)
 			{
 				// flow_table_remove(ft_, i);
 				expired++;

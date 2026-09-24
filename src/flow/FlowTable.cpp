@@ -38,12 +38,12 @@ std::expected<FlowTable, FlowError> FlowTable::init(
 	return ret;
 }
 
-struct FlowEntry *FlowTable::lookup(const struct FlowKey *raw)
+FlowEntry *FlowTable::lookup(const FlowKey *raw)
 {
 	lookups_++;
 
 	bool is_initiator;
-	struct FlowKey normalized = FlowKey::normalized(*raw, is_initiator);
+	FlowKey normalized = FlowKey::normalized(*raw, is_initiator);
 
 	HHResult64 hash = normalized.hash(seed_);
 	auto index = static_cast<uint32_t>(hash & mask_);
@@ -51,9 +51,9 @@ struct FlowEntry *FlowTable::lookup(const struct FlowKey *raw)
 	for (uint32_t i = 0; i < capacity_; i++)
 	{
 		uint32_t slot = (index + i) & mask_;
-		struct FlowEntry *e = &slots_[slot];
+		FlowEntry *e = &slots_[slot];
 
-		if (!e->occupied)
+		if (e->state != SlotState::Occupied)
 		{
 			misses_++;
 			return nullptr;
@@ -74,15 +74,14 @@ struct FlowEntry *FlowTable::lookup(const struct FlowKey *raw)
 }
 
 using std::chrono::steady_clock;
-struct FlowEntry *FlowTable::insert(
-    const struct FlowKey *raw,
-    FlowAction action)
+
+FlowEntry *FlowTable::insert(const FlowKey *raw, FlowAction action)
 {
 	if (count_ >= limit_)
 		return nullptr;
 
 	bool is_initiator;
-	struct FlowKey normalized = FlowKey::normalized(*raw, is_initiator);
+	FlowKey normalized = FlowKey::normalized(*raw, is_initiator);
 
 	HHResult64 hash = normalized.hash(seed_);
 	auto index = static_cast<uint32_t>(hash & mask_);
@@ -90,29 +89,29 @@ struct FlowEntry *FlowTable::insert(
 	for (uint32_t i = 0; i < capacity_; i++)
 	{
 		uint32_t slot = (index + i) & mask_;
-		struct FlowEntry *e = &slots_[slot];
+		FlowEntry *e = &slots_[slot];
 
-		if (!e->occupied)
+		if (e->state != SlotState::Occupied)
 		{
 			memset(e, 0, sizeof(*e));
 			e->key = normalized;
 			e->hash = hash;
 			e->action = action;
-			e->occupied = true;
+			e->state = SlotState::Occupied;
 			e->created_at = steady_clock::now();
 			e->last_seen = e->created_at;
-			e->timeout = timeout::other;
+			e->expiry = timeout::other;
 
 			if (normalized.proto == IPPROTO_TCP)
 			{
 				e->src.state = TcpState::SynSent;
 				e->dst.state = TcpState::Closed;
-				e->timeout = timeout::tcp_syn_sent;
+				e->expiry = timeout::tcp_syn_sent;
 			}
 			else if (normalized.proto == IPPROTO_UDP)
-				e->timeout = timeout::udp;
+				e->expiry = timeout::udp;
 			else if (normalized.proto == IPPROTO_ICMP)
-				e->timeout = timeout::icmp;
+				e->expiry = timeout::icmp;
 
 			count_++;
 			insertions_++;
@@ -130,9 +129,9 @@ void FlowTable::remove(uint32_t slot)
 	while (scanned++ < mask_)
 	{
 		uint32_t next = (current + 1) & mask_;
-		struct FlowEntry *ne = &slots_[next];
+		FlowEntry *ne = &slots_[next];
 
-		if (!ne->occupied)
+		if (ne->state != SlotState::Occupied)
 			break;
 
 		auto natural = static_cast<uint32_t>(ne->hash & mask_);
@@ -150,8 +149,8 @@ void FlowTable::remove(uint32_t slot)
 }
 
 void FlowTable::update(
-    struct FlowEntry &e,
-    const struct FlowKey *raw,
+    FlowEntry &e,
+    const FlowKey *raw,
     uint8_t tcp_flags,
     uint32_t pkt_len)
 {
@@ -165,15 +164,15 @@ void FlowTable::update(
 	if (e.key.proto == IPPROTO_TCP)
 		e.update_tcp_state(tcp_flags, is_initiator);
 	else
-		e.timeout = e.select_timeout();
+		e.expiry = e.select_timeout();
 }
 
 FlowVerdict FlowTable::process(
-    const struct FlowKey *key,
+    const FlowKey *key,
     uint8_t tcp_flags,
     uint32_t pkt_len)
 {
-	struct FlowEntry *e = lookup(key);
+	FlowEntry *e = lookup(key);
 
 	if (e)
 	{
