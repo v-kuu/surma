@@ -102,7 +102,7 @@ TEST_CASE("ack in syn rcvd moves both to established", "[unit][flowentry][tcp]")
 	e.src.state = TcpState::SynSent;
 	e.dst.state = TcpState::SynRcvd;
 
-	e.update_tcp_state(TH_ACK, false);
+	e.update_tcp_state(TH_ACK, true);
 
 	REQUIRE(e.src.state == TcpState::Established);
 	REQUIRE(e.dst.state == TcpState::Established);

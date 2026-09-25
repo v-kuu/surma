@@ -36,6 +36,12 @@ void FlowEntry::update_tcp_state(uint8_t flags, bool is_initiator)
 				source->state = TcpState::SynRcvd;
 				expiry = timeout::tcp_syn_rcvd;
 			}
+			else if ((flags & TH_ACK) && dest->state == TcpState::SynRcvd)
+			{
+				source->state = TcpState::Established;
+				dest->state = TcpState::Established;
+				expiry = timeout::tcp_established;
+			}
 			break;
 
 		case TcpState::SynRcvd:
