@@ -36,7 +36,7 @@ void ReaperThread::run_()
 
 			if (now - e->last_seen > e->expiry)
 			{
-				// flow_table_remove(ft_, i);
+				ft_.remove(i);
 				expired++;
 				i--;
 			}

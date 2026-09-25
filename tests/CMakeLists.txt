@@ -8,6 +8,7 @@ add_executable(surma_tests
 	queue/test_spscqueue.cpp
 	processing/test_packet_parser.cpp
 	flow/test_flowkey.cpp
+	flow/test_flowentry.cpp
 	test_pipeline.cpp
 	test_integration.cpp
 )
